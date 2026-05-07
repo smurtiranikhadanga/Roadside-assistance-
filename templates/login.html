@@ -3,197 +3,250 @@
 
 {% block content %}
 <div class="login-page">
-  <!-- Animated background blobs -->
-  <div class="blob blob-1"></div>
-  <div class="blob blob-2"></div>
-  <div class="blob blob-3"></div>
 
-  <div class="login-card">
-    <!-- Logo -->
-    <div class="login-logo">
-      <div class="logo-icon">🚗</div>
-      <h1 class="logo-text">RoadSide<span class="accent">+</span></h1>
-      <p class="logo-tagline">AI-Powered Roadside Assistance</p>
+  <!-- Left panel -->
+  <div class="login-left">
+    <div class="login-brand">
+      <div class="brand-mark">🚗</div>
+      <div class="brand-name">RoadSide<span>+</span></div>
     </div>
-
-    <!-- Features list -->
-    <ul class="login-features">
-      <li><span class="feat-icon">📍</span> Real-time mechanic tracking</li>
-      <li><span class="feat-icon">🤖</span> AI-powered assistance</li>
-      <li><span class="feat-icon">⚡</span> Emergency SOS anytime</li>
-      <li><span class="feat-icon">💳</span> Secure Razorpay payments</li>
-    </ul>
-
-    <!-- Google Sign-In -->
-    <a href="{{ url_for('auth.google_login') }}" class="btn-google" id="google-signin-btn">
-      <svg width="20" height="20" viewBox="0 0 24 24">
-        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-      </svg>
-      Continue with Google
-    </a>
-
-    <p class="login-terms">
-      By signing in, you agree to our
-      <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>
-    </p>
-
-    <div class="login-divider">
-      <span>How it works</span>
+    <div class="login-hero">
+      <h1>Help is always<br><span class="hero-accent">one tap away.</span></h1>
+      <p>AI-powered roadside assistance that connects you with certified mechanics in minutes — not hours.</p>
     </div>
+    <div class="login-stats">
+      <div class="ls"><div class="ls-value">12K+</div><div class="ls-label">Happy customers</div></div>
+      <div class="ls-div"></div>
+      <div class="ls"><div class="ls-value">850+</div><div class="ls-label">Expert mechanics</div></div>
+      <div class="ls-div"></div>
+      <div class="ls"><div class="ls-value">4.9★</div><div class="ls-label">App rating</div></div>
+    </div>
+    <div class="login-features">
+      <div class="lf-item"><span>⚡</span> Mechanic dispatched in under 5 mins</div>
+      <div class="lf-item"><span>📍</span> Live GPS tracking</div>
+      <div class="lf-item"><span>🔒</span> Secure Razorpay payments</div>
+      <div class="lf-item"><span>🤖</span> 24/7 AI assistant</div>
+    </div>
+  </div>
 
-    <div class="login-steps">
-      <div class="step">
-        <div class="step-num">1</div>
-        <div class="step-text">Sign in with Google</div>
+  <!-- Right panel — sign in card -->
+  <div class="login-right">
+    <div class="login-card">
+      <div class="login-card-header">
+        <h2>Welcome back 👋</h2>
+        <p>Sign in to your RoadSide+ account</p>
       </div>
-      <div class="step-arrow">→</div>
-      <div class="step">
-        <div class="step-num">2</div>
-        <div class="step-text">Request assistance</div>
+
+      <!-- Google sign in -->
+      <a href="{{ url_for('auth.google_login') }}" class="btn-google" id="google-signin-btn">
+        <svg width="20" height="20" viewBox="0 0 24 24">
+          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+        </svg>
+        Continue with Google
+      </a>
+
+      <div class="divider"><span>or try a demo account</span></div>
+
+      <div class="demo-grid">
+        <a href="{{ url_for('auth.demo_login', role='user') }}" class="demo-card user-demo" id="demo-user-btn">
+          <div class="demo-icon">👤</div>
+          <div class="demo-label">User</div>
+          <div class="demo-desc">Request service</div>
+        </a>
+        <a href="{{ url_for('auth.demo_login', role='mechanic') }}" class="demo-card mechanic-demo" id="demo-mechanic-btn">
+          <div class="demo-icon">🔧</div>
+          <div class="demo-label">Mechanic</div>
+          <div class="demo-desc">Manage jobs</div>
+        </a>
+        <a href="{{ url_for('auth.demo_login', role='admin') }}" class="demo-card admin-demo" id="demo-admin-btn">
+          <div class="demo-icon">🛡️</div>
+          <div class="demo-label">Admin</div>
+          <div class="demo-desc">Full control</div>
+        </a>
       </div>
-      <div class="step-arrow">→</div>
-      <div class="step">
-        <div class="step-num">3</div>
-        <div class="step-text">Mechanic arrives</div>
-      </div>
+
+      <p class="terms-text">By continuing, you agree to our <a href="#">Terms</a> & <a href="#">Privacy Policy</a></p>
     </div>
   </div>
 </div>
 
 <style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Plus Jakarta Sans', sans-serif; }
+
 .login-page {
-  min-height: 100vh;
   display: flex;
-  align-items: center;
+  min-height: 100vh;
+  background: #F0F4F8;
+}
+
+/* Left */
+.login-left {
+  flex: 1;
+  background: linear-gradient(145deg, #1E3A5F 0%, #2D5F8A 60%, #1E3A5F 100%);
+  padding: 3rem;
+  display: flex;
+  flex-direction: column;
   justify-content: center;
   position: relative;
   overflow: hidden;
-  background: var(--bg-primary);
-  padding: 2rem;
 }
-
-.blob {
+.login-left::before {
+  content: '';
   position: absolute;
+  width: 500px; height: 500px;
   border-radius: 50%;
-  filter: blur(80px);
-  opacity: 0.15;
-  animation: float 8s ease-in-out infinite;
+  background: rgba(255,107,53,.12);
+  top: -150px; right: -150px;
+  animation: bgFloat 8s ease-in-out infinite;
 }
-.blob-1 { width: 400px; height: 400px; background: var(--red); top: -100px; left: -100px; animation-delay: 0s; }
-.blob-2 { width: 350px; height: 350px; background: var(--blue); bottom: -80px; right: -80px; animation-delay: 3s; }
-.blob-3 { width: 250px; height: 250px; background: var(--green); top: 50%; left: 50%; animation-delay: 6s; }
-
-@keyframes float {
-  0%, 100% { transform: translateY(0) scale(1); }
-  50% { transform: translateY(-20px) scale(1.05); }
+.login-left::after {
+  content: '';
+  position: absolute;
+  width: 350px; height: 350px;
+  border-radius: 50%;
+  background: rgba(0,184,148,.08);
+  bottom: -100px; left: -100px;
+  animation: bgFloat 10s ease-in-out infinite reverse;
+}
+@keyframes bgFloat {
+  0%,100% { transform: scale(1) translateY(0); }
+  50%      { transform: scale(1.05) translateY(-20px); }
 }
 
-.login-card {
-  background: var(--card-bg);
-  border: 1px solid var(--border);
-  border-radius: 24px;
-  padding: 3rem 2.5rem;
-  width: 100%;
-  max-width: 460px;
-  backdrop-filter: blur(20px);
-  box-shadow: 0 24px 80px rgba(0,0,0,0.4);
+.login-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 3.5rem;
   position: relative;
   z-index: 1;
 }
-
-.login-logo { text-align: center; margin-bottom: 2rem; }
-.logo-icon { font-size: 3rem; margin-bottom: 0.5rem; }
-.logo-text { font-size: 2rem; font-weight: 800; color: var(--text-primary); margin: 0; }
-.logo-text .accent { color: var(--red); }
-.logo-tagline { color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.25rem; }
-
-.login-features {
-  list-style: none;
-  padding: 0;
-  margin: 0 0 2rem;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
+.brand-mark {
+  width: 44px; height: 44px;
+  background: linear-gradient(135deg, #FF6B35, #E55A26);
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem;
+  box-shadow: 0 6px 20px rgba(255,107,53,.4);
 }
-.login-features li {
-  font-size: 0.85rem;
-  color: var(--text-secondary);
+.brand-name { font-size: 1.4rem; font-weight: 800; color: #fff; }
+.brand-name span { color: #FF8C5A; }
+
+.login-hero { position: relative; z-index: 1; margin-bottom: 2.5rem; }
+.login-hero h1 { font-size: 2.8rem; font-weight: 800; color: #fff; line-height: 1.15; margin-bottom: 1rem; }
+.hero-accent { color: #FF8C5A; }
+.login-hero p { color: rgba(255,255,255,.65); font-size: 1.05rem; line-height: 1.65; max-width: 380px; }
+
+.login-stats {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  position: relative; z-index: 1;
 }
-.feat-icon { font-size: 1rem; }
+.ls-value { font-size: 1.5rem; font-weight: 800; color: #fff; }
+.ls-label { font-size: .75rem; color: rgba(255,255,255,.5); font-weight: 500; }
+.ls-div { width: 1px; height: 36px; background: rgba(255,255,255,.2); }
 
-.btn-google {
+.login-features { display: flex; flex-direction: column; gap: .75rem; position: relative; z-index: 1; }
+.lf-item {
+  display: flex; align-items: center; gap: .75rem;
+  color: rgba(255,255,255,.7); font-size: .9rem;
+}
+.lf-item span { font-size: 1.1rem; }
+
+/* Right */
+.login-right {
+  width: 480px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.75rem;
-  width: 100%;
-  padding: 0.875rem 1.5rem;
+  padding: 2rem;
+  background: #F0F4F8;
+}
+.login-card {
   background: #fff;
-  color: #333;
-  font-weight: 600;
-  font-size: 1rem;
-  border-radius: 12px;
-  text-decoration: none;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+  border-radius: 24px;
+  padding: 2.5rem;
+  width: 100%;
+  box-shadow: 0 12px 48px rgba(0,0,0,.12);
+  border: 1px solid rgba(0,0,0,.06);
+}
+.login-card-header { margin-bottom: 2rem; }
+.login-card-header h2 { font-size: 1.6rem; font-weight: 800; color: #1A2332; margin-bottom: .4rem; }
+.login-card-header p { color: #5A6A7A; font-size: .9rem; }
+
+.btn-google {
+  display: flex; align-items: center; justify-content: center; gap: .75rem;
+  width: 100%; padding: .875rem;
+  background: #fff; color: #333;
+  font-weight: 700; font-size: .95rem;
+  border-radius: 14px; text-decoration: none;
+  border: 1.5px solid #E2E8F0;
+  box-shadow: 0 2px 8px rgba(0,0,0,.06);
+  transition: all .2s ease;
+  font-family: 'Plus Jakarta Sans', sans-serif;
 }
 .btn-google:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0,0,0,0.25);
+  box-shadow: 0 8px 24px rgba(0,0,0,.12);
+  border-color: #CBD5E0;
 }
 
-.login-terms {
-  text-align: center;
-  font-size: 0.78rem;
-  color: var(--text-muted);
-  margin: 1.25rem 0;
+.divider {
+  text-align: center; position: relative;
+  margin: 1.5rem 0; color: #9AA5B4; font-size: .82rem;
 }
-.login-terms a { color: var(--blue); text-decoration: none; }
+.divider::before,.divider::after {
+  content: ''; position: absolute; top: 50%;
+  width: 35%; height: 1px; background: #E2E8F0;
+}
+.divider::before { left: 0; }
+.divider::after { right: 0; }
 
-.login-divider {
-  text-align: center;
-  position: relative;
-  margin: 1.5rem 0;
-  color: var(--text-muted);
-  font-size: 0.8rem;
+.demo-grid {
+  display: grid;
+  grid-template-columns: repeat(3,1fr);
+  gap: .75rem;
+  margin-bottom: 1.25rem;
 }
-.login-divider::before, .login-divider::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  width: 38%;
-  height: 1px;
-  background: var(--border);
+.demo-card {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 1.1rem .5rem; border-radius: 16px;
+  text-decoration: none; border: 2px solid transparent;
+  transition: all .22s ease; cursor: pointer;
 }
-.login-divider::before { left: 0; }
-.login-divider::after { right: 0; }
+.demo-card:hover { transform: translateY(-4px); }
+.demo-icon { font-size: 2rem; margin-bottom: .4rem; }
+.demo-label { font-size: .82rem; font-weight: 700; margin-bottom: .1rem; }
+.demo-desc { font-size: .7rem; }
 
-.login-steps {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
+.user-demo     { background: #EBF5FF; border-color: #BDD9F7; }
+.user-demo     .demo-label { color: #1A5276; }
+.user-demo     .demo-desc  { color: #5B8DB8; }
+.user-demo:hover { border-color: #4A90D9; box-shadow: 0 8px 20px rgba(74,144,217,.2); }
+
+.mechanic-demo { background: #E8FBF7; border-color: #A3E9D8; }
+.mechanic-demo .demo-label { color: #00574A; }
+.mechanic-demo .demo-desc  { color: #3A9E88; }
+.mechanic-demo:hover { border-color: #00B894; box-shadow: 0 8px 20px rgba(0,184,148,.2); }
+
+.admin-demo    { background: #F0EDFF; border-color: #C5BDF8; }
+.admin-demo    .demo-label { color: #3D2E9E; }
+.admin-demo    .demo-desc  { color: #7B6ED0; }
+.admin-demo:hover { border-color: #6C5CE7; box-shadow: 0 8px 20px rgba(108,92,231,.2); }
+
+.terms-text { text-align: center; font-size: .76rem; color: #9AA5B4; }
+.terms-text a { color: #FF6B35; text-decoration: none; font-weight: 600; }
+
+@media (max-width: 768px) {
+  .login-left { display: none; }
+  .login-right { width: 100%; padding: 1.25rem; }
+  .login-card { padding: 1.75rem; }
 }
-.step { text-align: center; }
-.step-num {
-  width: 36px; height: 36px;
-  border-radius: 50%;
-  background: var(--red);
-  color: #fff;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 0.4rem;
-  font-size: 0.9rem;
-}
-.step-text { font-size: 0.75rem; color: var(--text-secondary); max-width: 70px; }
-.step-arrow { color: var(--text-muted); font-size: 1.2rem; }
 </style>
 {% endblock %}

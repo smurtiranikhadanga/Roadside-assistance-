@@ -2,7 +2,7 @@
 User model — stores Google OAuth profile + role.
 """
 from flask_login import UserMixin
-from app import db
+from extensions import db
 from datetime import datetime
 
 

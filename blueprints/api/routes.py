@@ -3,7 +3,7 @@ REST API Blueprint — JSON endpoints consumed by frontend JS (AJAX / fetch).
 """
 from flask import Blueprint, jsonify, request as req
 from flask_login import login_required, current_user
-from app import db
+from extensions import db
 from models.user import User
 from models.mechanic import Mechanic
 from models.request import Request, Payment, Review, Notification, EmergencyLog
@@ -111,7 +111,7 @@ def create_request():
     db.session.commit()
 
     # Notify via SocketIO
-    from app import socketio
+    from extensions import socketio
     socketio.emit("request_accepted", new_req.to_dict(), room=f"user_{current_user.id}")
     socketio.emit("new_job", new_req.to_dict(), room=f"mechanic_{best.id}")
 
@@ -149,7 +149,7 @@ def update_request_status(request_id):
 
     db.session.commit()
 
-    from app import socketio
+    from extensions import socketio
     socketio.emit("status_update", {"request_id": r.id, "status": status},
                   room=f"user_{r.user_id}")
     return success({"status": status})
@@ -252,7 +252,7 @@ def verify_payment():
         db.session.commit()
 
         # Notify user
-        from app import socketio
+        from extensions import socketio
         socketio.emit("payment_success", {"request_id": payment.request_id},
                       room=f"user_{payment.user_id}")
         return success({"status": "paid"}, "Payment verified successfully!")
@@ -356,7 +356,7 @@ def update_mechanic_location():
     m.longitude = data.get("lng")
     db.session.commit()
 
-    from app import socketio
+    from extensions import socketio
     # Broadcast to any active user tracking this mechanic
     active_req = Request.query.filter_by(mechanic_id=m.id)\
                               .filter(Request.status.in_(["accepted","traveling","reached"])).first()

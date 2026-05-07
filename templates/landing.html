@@ -1,0 +1,385 @@
+{% extends "base.html" %}
+{% block title %}RoadSide+ — AI-Powered Roadside Assistance{% endblock %}
+{% block extra_css %}
+<style>
+:root{--o:#FF6B35;--b:#1E3A5F;--g:#00B894;--w:#fff}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Plus Jakarta Sans',sans-serif;color:#1A2332;background:#fff}
+
+/* ── NAVBAR ── */
+.nav{
+  position:fixed;top:0;left:0;right:0;z-index:1000;
+  background:rgba(255,255,255,.95);backdrop-filter:blur(12px);
+  border-bottom:1px solid rgba(0,0,0,.07);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 4%;height:68px;
+}
+.nav-logo{display:flex;align-items:center;gap:.6rem;text-decoration:none}
+.nav-logo .mark{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--o),#E55A26);display:flex;align-items:center;justify-content:center;font-size:1.2rem;box-shadow:0 4px 12px rgba(255,107,53,.35)}
+.nav-logo .name{font-size:1.2rem;font-weight:800;color:var(--b)}
+.nav-logo .name span{color:var(--o)}
+.nav-links{display:flex;align-items:center;gap:.25rem}
+.nav-link{padding:.55rem .9rem;border-radius:8px;color:#3D4D5C;font-size:.875rem;font-weight:600;text-decoration:none;transition:all .18s;cursor:pointer;border:none;background:none;font-family:inherit}
+.nav-link:hover{background:#F0F4F8;color:var(--b)}
+
+/* Services dropdown */
+.nav-dropdown{position:relative}
+.nav-dropdown:hover .dropdown-menu{opacity:1;pointer-events:all;transform:translateY(0)}
+.dropdown-arrow{font-size:.6rem;margin-left:.25rem}
+.dropdown-menu{
+  position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%) translateY(-8px);
+  background:#fff;border-radius:16px;padding:.75rem;
+  box-shadow:0 20px 60px rgba(0,0,0,.15);border:1px solid rgba(0,0,0,.07);
+  min-width:240px;opacity:0;pointer-events:none;
+  transition:all .22s cubic-bezier(.4,0,.2,1);
+}
+.dd-item{
+  display:flex;align-items:center;gap:.75rem;
+  padding:.7rem .875rem;border-radius:10px;
+  color:#1A2332;font-size:.85rem;font-weight:600;
+  text-decoration:none;transition:all .16s;cursor:pointer;
+}
+.dd-item:hover{background:#FFF4F0;color:var(--o)}
+.dd-item .dd-icon{font-size:1.15rem;width:24px;text-align:center;flex-shrink:0}
+
+.nav-cta{display:flex;align-items:center;gap:.6rem}
+.btn-login{padding:.55rem 1.2rem;border-radius:10px;color:var(--b);font-weight:700;font-size:.875rem;text-decoration:none;border:1.5px solid #D0D9E5;transition:all .18s}
+.btn-login:hover{border-color:var(--b);background:#EBF3FF}
+.btn-get-help{padding:.55rem 1.35rem;border-radius:10px;background:linear-gradient(135deg,var(--o),#E55A26);color:#fff;font-weight:700;font-size:.875rem;text-decoration:none;box-shadow:0 4px 14px rgba(255,107,53,.35);transition:all .18s}
+.btn-get-help:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(255,107,53,.45)}
+
+/* ── HERO ── */
+.hero{
+  min-height:100vh;padding-top:68px;
+  background:linear-gradient(145deg,#1E3A5F 0%,#2D5F8A 55%,#1E3A5F 100%);
+  display:flex;align-items:center;justify-content:center;
+  text-align:center;position:relative;overflow:hidden;
+}
+.hero::before{content:'';position:absolute;width:600px;height:600px;border-radius:50%;background:rgba(255,107,53,.1);top:-200px;right:-200px;animation:blob 10s ease-in-out infinite}
+.hero::after{content:'';position:absolute;width:400px;height:400px;border-radius:50%;background:rgba(0,184,148,.08);bottom:-150px;left:-100px;animation:blob 13s ease-in-out infinite reverse}
+@keyframes blob{0%,100%{transform:scale(1)}50%{transform:scale(1.1) translate(20px,-20px)}}
+.hero-content{position:relative;z-index:1;max-width:700px;padding:2rem}
+.hero-badge{display:inline-flex;align-items:center;gap:.5rem;background:rgba(255,107,53,.15);border:1px solid rgba(255,107,53,.3);color:#FF8C5A;padding:.4rem 1rem;border-radius:99px;font-size:.8rem;font-weight:700;margin-bottom:1.75rem}
+.hero h1{font-size:3.5rem;font-weight:800;color:#fff;line-height:1.12;margin-bottom:1.25rem}
+.hero h1 span{color:#FF8C5A}
+.hero p{font-size:1.1rem;color:rgba(255,255,255,.7);margin-bottom:2.5rem;line-height:1.7}
+.hero-btns{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap}
+.hero-btn-primary{padding:.9rem 2.25rem;border-radius:14px;background:linear-gradient(135deg,var(--o),#E55A26);color:#fff;font-weight:700;font-size:1rem;text-decoration:none;box-shadow:0 8px 24px rgba(255,107,53,.45);transition:all .2s}
+.hero-btn-primary:hover{transform:translateY(-3px);box-shadow:0 14px 32px rgba(255,107,53,.55)}
+.hero-btn-ghost{padding:.9rem 2.25rem;border-radius:14px;background:rgba(255,255,255,.12);color:#fff;font-weight:700;font-size:1rem;text-decoration:none;border:1.5px solid rgba(255,255,255,.25);backdrop-filter:blur(8px);transition:all .2s}
+.hero-btn-ghost:hover{background:rgba(255,255,255,.2);transform:translateY(-3px)}
+.hero-stats{display:flex;gap:3rem;justify-content:center;margin-top:3.5rem;flex-wrap:wrap}
+.hs{text-align:center}.hs-v{font-size:2rem;font-weight:800;color:#fff}.hs-l{font-size:.78rem;color:rgba(255,255,255,.5);font-weight:500}
+
+/* ── SERVICES SECTION ── */
+.section{padding:5rem 4%}
+.section-alt{background:#F8FAFC}
+.section-label{font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--o);margin-bottom:.75rem}
+.section-title{font-size:2.25rem;font-weight:800;color:var(--b);margin-bottom:.75rem;line-height:1.2}
+.section-sub{font-size:1rem;color:#5A6A7A;max-width:520px;line-height:1.65}
+.section-header{margin-bottom:3rem}
+.services-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:1.25rem}
+.svc-card{
+  background:#fff;border-radius:20px;padding:1.75rem;
+  border:1.5px solid #E5EAF0;transition:all .22s;cursor:pointer;
+  text-decoration:none;display:block;
+}
+.svc-card:hover{border-color:var(--o);transform:translateY(-6px);box-shadow:0 16px 40px rgba(255,107,53,.12)}
+.svc-icon{font-size:2.5rem;margin-bottom:1rem;display:block}
+.svc-name{font-size:1rem;font-weight:800;color:var(--b);margin-bottom:.4rem}
+.svc-desc{font-size:.83rem;color:#5A6A7A;line-height:1.5}
+.svc-arrow{margin-top:1rem;font-size:.8rem;font-weight:700;color:var(--o)}
+
+/* ── ABOUT ── */
+.about-grid{display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:center}
+.about-img{background:linear-gradient(135deg,var(--b),#2D5F8A);border-radius:24px;height:420px;display:flex;align-items:center;justify-content:center;font-size:8rem;box-shadow:0 24px 60px rgba(30,58,95,.25)}
+.about-content .section-label{display:block}
+.about-feature{display:flex;align-items:flex-start;gap:1rem;margin-bottom:1.5rem}
+.about-feature-icon{width:44px;height:44px;border-radius:12px;background:#FFF4F0;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0}
+.about-feature-text h4{font-size:.95rem;font-weight:700;color:var(--b);margin-bottom:.2rem}
+.about-feature-text p{font-size:.83rem;color:#5A6A7A;line-height:1.5}
+
+/* ── EMERGENCY ── */
+.emergency-section{
+  background:linear-gradient(135deg,#CC0000,#FF4444);
+  padding:4rem 4%;text-align:center;
+}
+.emergency-section h2{font-size:2.5rem;font-weight:800;color:#fff;margin-bottom:1rem}
+.emergency-section p{color:rgba(255,255,255,.8);font-size:1.05rem;margin-bottom:2rem}
+.sos-big{
+  display:inline-flex;align-items:center;gap:1rem;
+  padding:1.1rem 3rem;border-radius:99px;
+  background:#fff;color:#CC0000;font-weight:800;font-size:1.2rem;
+  text-decoration:none;box-shadow:0 8px 30px rgba(0,0,0,.25);
+  animation:sosBig 2s infinite;transition:transform .2s;
+}
+.sos-big:hover{transform:scale(1.05)}
+@keyframes sosBig{0%,100%{box-shadow:0 8px 30px rgba(0,0,0,.25)}50%{box-shadow:0 8px 50px rgba(0,0,0,.4)}}
+.emergency-phones{display:flex;gap:2rem;justify-content:center;flex-wrap:wrap;margin-top:2rem}
+.ep{color:rgba(255,255,255,.85);font-size:.9rem}.ep strong{display:block;font-size:1.2rem;color:#fff}
+
+/* ── CONTACT ── */
+.contact-grid{display:grid;grid-template-columns:1fr 1fr;gap:3rem;align-items:start}
+.contact-info{}.ci-item{display:flex;align-items:flex-start;gap:1rem;margin-bottom:1.75rem}
+.ci-icon{width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,#FFF4F0,#FFE5D5);display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0}
+.ci-text h4{font-weight:700;color:var(--b);font-size:.95rem;margin-bottom:.2rem}
+.ci-text p{color:#5A6A7A;font-size:.85rem}
+.contact-form{background:#fff;border-radius:20px;padding:2rem;box-shadow:0 8px 30px rgba(0,0,0,.08);border:1px solid #E5EAF0}
+.cf-title{font-size:1.2rem;font-weight:800;color:var(--b);margin-bottom:1.5rem}
+.cf-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.cf-group{margin-bottom:1rem}
+.cf-label{display:block;font-size:.8rem;font-weight:700;color:#5A6A7A;margin-bottom:.35rem}
+.cf-input{width:100%;padding:.7rem 1rem;background:#F8FAFC;border:1.5px solid #E5EAF0;border-radius:10px;font-size:.875rem;font-family:inherit;color:#1A2332;transition:all .18s}
+.cf-input:focus{outline:none;border-color:var(--o);background:#fff;box-shadow:0 0 0 3px rgba(255,107,53,.1)}
+.cf-input::placeholder{color:#9AA5B4}
+textarea.cf-input{resize:vertical;min-height:100px}
+
+/* ── FOOTER ── */
+.footer{background:var(--b);padding:3rem 4% 1.5rem}
+.footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:2rem;margin-bottom:2.5rem}
+.footer-brand .name{font-size:1.2rem;font-weight:800;color:#fff;margin-bottom:.5rem}
+.footer-brand .name span{color:#FF8C5A}
+.footer-brand p{font-size:.82rem;color:rgba(255,255,255,.45);line-height:1.65;max-width:220px}
+.footer-col h4{font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.35);margin-bottom:1rem}
+.footer-link{display:block;font-size:.85rem;color:rgba(255,255,255,.6);text-decoration:none;margin-bottom:.6rem;transition:color .16s}
+.footer-link:hover{color:#FF8C5A}
+.footer-bottom{border-top:1px solid rgba(255,255,255,.08);padding-top:1.25rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem}
+.footer-copy{font-size:.78rem;color:rgba(255,255,255,.3)}
+
+@media(max-width:900px){
+  .nav-links{display:none}.about-grid,.contact-grid,.footer-grid{grid-template-columns:1fr}
+  .hero h1{font-size:2.3rem}.services-grid{grid-template-columns:1fr 1fr}
+  .cf-row{grid-template-columns:1fr}
+}
+@media(max-width:500px){.services-grid{grid-template-columns:1fr}.hero h1{font-size:1.8rem}}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- NAVBAR -->
+<nav class="nav" id="navbar">
+  <a href="{{ url_for('landing.home') }}" class="nav-logo">
+    <div class="mark">🚗</div>
+    <div class="name">RoadSide<span>+</span></div>
+  </a>
+
+  <div class="nav-links">
+    <a href="#home" class="nav-link">Home</a>
+
+    <!-- Services dropdown -->
+    <div class="nav-dropdown">
+      <button class="nav-link" onclick="">Services <span class="dropdown-arrow">▼</span></button>
+      <div class="dropdown-menu">
+        {% set services = [
+          ('🔋','Battery Jumpstart','battery','Quick battery boost to get you back on road'),
+          ('🚛','Towing Services','towing','Safe towing to nearest garage or your choice'),
+          ('⛽','Fuel Delivery','fuel','Emergency fuel delivered to your location'),
+          ('🛠️','Roadside Assistance','other','General breakdowns and roadside help'),
+          ('📍','Car Tracking Services','tracking','Real-time GPS tracking for your vehicle'),
+          ('🔧','Periodic Car Service','service','Scheduled maintenance at your doorstep'),
+          ('🔴','Flat Tire Assistance','flat_tire','Fast tyre change or puncture repair'),
+        ] %}
+        {% for icon, name, stype, desc in services %}
+        <a href="{{ url_for('landing.service_redirect', service=stype) }}" class="dd-item">
+          <span class="dd-icon">{{ icon }}</span>
+          <div>
+            <div style="font-weight:700;font-size:.85rem">{{ name }}</div>
+            <div style="font-size:.72rem;color:#9AA5B4;margin-top:.1rem">{{ desc }}</div>
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+
+    <a href="#about" class="nav-link">About</a>
+    <a href="#emergency" class="nav-link">Emergency</a>
+    <a href="#contact" class="nav-link">Contact Us</a>
+  </div>
+
+  <div class="nav-cta">
+    {% if current_user and current_user.is_authenticated %}
+      <a href="{{ url_for('user.dashboard') if current_user.role=='user' else url_for('admin.dashboard') if current_user.role=='admin' else url_for('mechanic.dashboard') }}" class="btn-get-help">Go to Dashboard →</a>
+    {% else %}
+      <a href="{{ url_for('auth.login') }}" class="btn-login">Sign In</a>
+      <a href="{{ url_for('auth.login') }}" class="btn-get-help">Get Help Now</a>
+    {% endif %}
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero" id="home">
+  <div class="hero-content">
+    <div class="hero-badge">🏆 India's #1 AI Roadside Platform</div>
+    <h1>Stuck on the road?<br><span>Help arrives in minutes.</span></h1>
+    <p>From flat tyres to dead batteries — our network of 850+ certified mechanics is always on standby. AI-matched, GPS-tracked, fully insured.</p>
+    <div class="hero-btns">
+      <a href="{{ url_for('auth.login') }}" class="hero-btn-primary">🆘 Request Help Now</a>
+      <a href="#services" class="hero-btn-ghost">View All Services</a>
+    </div>
+    <div class="hero-stats">
+      <div class="hs"><div class="hs-v">12K+</div><div class="hs-l">Requests handled</div></div>
+      <div class="hs"><div class="hs-v">5 min</div><div class="hs-l">Avg dispatch time</div></div>
+      <div class="hs"><div class="hs-v">850+</div><div class="hs-l">Certified mechanics</div></div>
+      <div class="hs"><div class="hs-v">4.9★</div><div class="hs-l">Customer rating</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- SERVICES -->
+<section class="section" id="services">
+  <div class="section-header">
+    <div class="section-label">Our Services</div>
+    <h2 class="section-title">Everything you need,<br>right where you are</h2>
+    <p class="section-sub">Our AI dispatcher finds the nearest qualified mechanic for your specific issue — instantly.</p>
+  </div>
+  <div class="services-grid">
+    {% set svc_list = [
+      ('🔋','Battery Jumpstart','battery','Dead battery? We jumpstart your vehicle within minutes, anywhere.'),
+      ('🚛','Towing Services','towing','Safe flatbed or wheel-lift towing to any destination you choose.'),
+      ('⛽','Fuel Delivery','fuel','Run out of petrol? We deliver fuel directly to your exact location.'),
+      ('🛠️','Roadside Assistance','other','General breakdown support — our expert evaluates and fixes on the spot.'),
+      ('📍','Car Tracking Services','tracking','Live GPS monitoring for your vehicle — peace of mind 24/7.'),
+      ('🔧','Periodic Car Service','service','Scheduled servicing and maintenance at your home or office.'),
+      ('🔴','Flat Tyre Assistance','flat_tire','Fast tyre change or puncture repair — back on road in 20 mins.'),
+    ] %}
+    {% for icon, name, stype, desc in svc_list %}
+    <a href="{{ url_for('landing.service_redirect', service=stype) }}" class="svc-card">
+      <span class="svc-icon">{{ icon }}</span>
+      <div class="svc-name">{{ name }}</div>
+      <div class="svc-desc">{{ desc }}</div>
+      <div class="svc-arrow">Request this service →</div>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+
+<!-- ABOUT -->
+<section class="section section-alt" id="about">
+  <div class="about-grid">
+    <div class="about-img">🚗</div>
+    <div class="about-content">
+      <span class="section-label">About RoadSide+</span>
+      <h2 class="section-title">Built for India's roads.<br>Powered by AI.</h2>
+      <p class="section-sub" style="margin-bottom:2rem">We combine cutting-edge AI with a nationwide mechanic network to deliver the fastest, most reliable roadside assistance in India.</p>
+      <div class="about-feature">
+        <div class="about-feature-icon">🤖</div>
+        <div class="about-feature-text">
+          <h4>AI Smart Matching</h4>
+          <p>Our AI considers distance, rating, specialisation and traffic to pick the best mechanic for your issue.</p>
+        </div>
+      </div>
+      <div class="about-feature">
+        <div class="about-feature-icon">📡</div>
+        <div class="about-feature-text">
+          <h4>Real-Time GPS Tracking</h4>
+          <p>Watch your mechanic travel to you live on the map. Know exactly when they'll arrive.</p>
+        </div>
+      </div>
+      <div class="about-feature">
+        <div class="about-feature-icon">🔒</div>
+        <div class="about-feature-text">
+          <h4>Secure Payments</h4>
+          <p>Pay safely via Razorpay — UPI, cards, net banking. Transparent pricing, no hidden charges.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- EMERGENCY -->
+<section class="emergency-section" id="emergency">
+  <h2>🚨 In an Emergency?</h2>
+  <p>Don't wait — hit the SOS button and we'll dispatch the nearest help immediately.</p>
+  <a href="{{ url_for('auth.login') }}" class="sos-big">🚨 SOS — Get Help Now</a>
+  <div class="emergency-phones">
+    <div class="ep"><strong>📞 1800-ROADSIDE</strong>Toll-free 24/7</div>
+    <div class="ep"><strong>📞 +91 98765 43210</strong>WhatsApp support</div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section class="section" id="contact">
+  <div class="contact-grid">
+    <div class="contact-info">
+      <div class="section-label">Get In Touch</div>
+      <h2 class="section-title">We're here to help</h2>
+      <p class="section-sub" style="margin-bottom:2rem">Have a question, partnership inquiry, or feedback? We'd love to hear from you.</p>
+      <div class="ci-item"><div class="ci-icon">📍</div><div class="ci-text"><h4>Head Office</h4><p>42 Tech Park, Outer Ring Road,<br>Bengaluru, Karnataka 560103</p></div></div>
+      <div class="ci-item"><div class="ci-icon">📞</div><div class="ci-text"><h4>Phone</h4><p>+91 98765 43210<br>1800-ROADSIDE (Toll-free)</p></div></div>
+      <div class="ci-item"><div class="ci-icon">📧</div><div class="ci-text"><h4>Email</h4><p>hello@roadsideplus.in<br>support@roadsideplus.in</p></div></div>
+    </div>
+    <div class="contact-form">
+      <div class="cf-title">Send us a message</div>
+      <form id="contact-form" onsubmit="submitContact(event)">
+        <div class="cf-row">
+          <div class="cf-group"><label class="cf-label">First Name</label><input class="cf-input" placeholder="Rajan" required/></div>
+          <div class="cf-group"><label class="cf-label">Last Name</label><input class="cf-input" placeholder="Kumar" required/></div>
+        </div>
+        <div class="cf-group"><label class="cf-label">Email</label><input class="cf-input" type="email" placeholder="rajan@example.com" required/></div>
+        <div class="cf-group"><label class="cf-label">Phone</label><input class="cf-input" type="tel" placeholder="+91 98765 43210"/></div>
+        <div class="cf-group"><label class="cf-label">Message</label><textarea class="cf-input" placeholder="How can we help you?" required></textarea></div>
+        <button type="submit" style="width:100%;padding:.85rem;border-radius:12px;background:linear-gradient(135deg,#FF6B35,#E55A26);color:#fff;font-weight:700;font-size:.95rem;border:none;cursor:pointer;font-family:inherit;box-shadow:0 6px 18px rgba(255,107,53,.35);transition:all .2s">Send Message →</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <div class="name">RoadSide<span>+</span></div>
+      <p>India's most trusted AI-powered roadside assistance platform. Available 24/7 across 100+ cities.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Services</h4>
+      <a href="#" class="footer-link">Battery Jumpstart</a>
+      <a href="#" class="footer-link">Towing Services</a>
+      <a href="#" class="footer-link">Fuel Delivery</a>
+      <a href="#" class="footer-link">Flat Tyre Repair</a>
+    </div>
+    <div class="footer-col">
+      <h4>Company</h4>
+      <a href="#about" class="footer-link">About Us</a>
+      <a href="#contact" class="footer-link">Contact</a>
+      <a href="#" class="footer-link">Careers</a>
+      <a href="#" class="footer-link">Press</a>
+    </div>
+    <div class="footer-col">
+      <h4>Legal</h4>
+      <a href="#" class="footer-link">Privacy Policy</a>
+      <a href="#" class="footer-link">Terms of Service</a>
+      <a href="#" class="footer-link">Refund Policy</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <div class="footer-copy">© 2026 RoadSide+ Technologies Pvt. Ltd. All rights reserved.</div>
+    <div class="footer-copy">Made with ❤️ in India</div>
+  </div>
+</footer>
+
+<script>
+// Navbar scroll effect
+window.addEventListener('scroll', () => {
+  const nav = document.getElementById('navbar');
+  nav.style.boxShadow = window.scrollY > 20 ? '0 4px 20px rgba(0,0,0,.1)' : 'none';
+});
+
+// Smooth scroll for anchor links
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    const target = document.querySelector(a.getAttribute('href'));
+    if (target) { e.preventDefault(); target.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  });
+});
+
+// Contact form
+function submitContact(e) {
+  e.preventDefault();
+  const btn = e.target.querySelector('button[type=submit]');
+  btn.textContent = '✅ Message Sent!';
+  btn.style.background = 'linear-gradient(135deg,#00B894,#00CDA8)';
+  setTimeout(() => { e.target.reset(); btn.textContent = 'Send Message →'; btn.style.background = ''; }, 3000);
+}
+</script>
+{% endblock %}

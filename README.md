@@ -1,162 +1,110 @@
-# 🚗 RoadSide+ — Intelligent Roadside Assistance Platform
+# 🚗 RoadSide+ — AI-Powered Roadside Assistance Platform
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Stack-MERN-61DAFB?style=for-the-badge&logo=react" />
-  <img src="https://img.shields.io/badge/Realtime-Socket.IO-010101?style=for-the-badge&logo=socket.io" />
-  <img src="https://img.shields.io/badge/Maps-Google%20Maps%20API-4285F4?style=for-the-badge&logo=google-maps" />
-  <img src="https://img.shields.io/badge/Auth-JWT%20%2B%20OAuth-orange?style=for-the-badge" />
-  <img src="https://img.shields.io/badge/Payments-Stripe-635BFF?style=for-the-badge&logo=stripe" />
-  <img src="https://img.shields.io/badge/Notifications-Twilio%20%2F%20FCM-red?style=for-the-badge" />
-</p>
-
----
-
-## 📌 Overview
-
-**RoadSide+** is a full-stack, production-grade roadside assistance platform that connects stranded motorists with nearby service providers (mechanics, tow trucks, fuel delivery agents) in real-time.
-
-Think of it as the **Uber for roadside emergencies** — with live GPS tracking, instant booking, dynamic pricing, in-app communication, and AI-powered ETA predictions.
+A full-stack roadside assistance platform built with **Flask + SQLite/MySQL + SocketIO**.  
+Features a public landing page, role-based dashboards, real-time GPS tracking, AI chatbot, and Razorpay payments.
 
 ---
 
 ## ✨ Features
 
-### 👤 User (Driver) App
-- 🔐 Secure registration/login with JWT + Google OAuth
-- 📍 Auto-detect location via GPS (Google Maps API)
-- 🆘 Request emergency services (tow, fuel, tire change, battery jump, lockout)
-- 📡 Real-time provider tracking on map
-- 💬 In-app chat with assigned provider
-- 💳 Seamless payment via Stripe
-- ⭐ Rate & review providers post-service
-- 🔔 Push & SMS notifications for updates
+| Feature | Tech Used |
+|---|---|
+| Public Landing Page + Navbar | HTML, CSS, Vanilla JS |
+| Google OAuth 2.0 Login | Authlib |
+| Role-based Dashboards (User/Mechanic/Admin) | Flask Blueprints |
+| Real-time GPS Tracking | Flask-SocketIO + Leaflet.js |
+| Interactive Maps | Leaflet.js + OpenStreetMap (free, no key needed) |
+| AI Roadside Chatbot | OpenAI GPT-4o-mini (with mock fallback) |
+| Smart Mechanic Matching | Haversine formula + scoring algorithm |
+| Payments | Razorpay (with demo fallback) |
+| Analytics Charts | Chart.js |
+| Database | SQLite (dev) / MySQL (prod) |
 
-### 🔧 Provider (Mechanic/Tow) App
-- 📋 Service request dashboard with accept/decline
-- 🗺️ Optimized routing to user location
-- 💰 Earnings tracker & withdrawal
-- 📅 Schedule & availability management
-- 📊 Analytics dashboard
+---
 
-### 🛡️ Admin Panel
-- 👥 User & Provider management
-- 📈 Platform analytics & revenue reports
-- 🚩 Dispute resolution system
-- 🗺️ Live fleet map of all active jobs
-- ⚙️ Dynamic pricing configuration
+## 🚀 Quick Start
+
+### 1. Clone & install
+```bash
+git clone https://github.com/smurtiranikhadanga/Roadside-assistance-
+cd Roadside-assistance-
+pip install -r requirements.txt
+```
+
+### 2. Configure environment
+```bash
+cp .env.example .env
+# Edit .env — only SECRET_KEY is required to run
+```
+
+### 3. Run
+```bash
+python app.py
+```
+
+Open **http://localhost:5000** — use the **Demo Login** buttons to explore all 3 roles instantly.
+
+---
+
+## 🗝️ API Keys (all optional for testing)
+
+| Key | Feature unlocked |
+|---|---|
+| `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` | Real Google Sign-In |
+| `OPENAI_API_KEY` | Live AI chatbot responses |
+| `RAZORPAY_KEY_ID` + `RAZORPAY_KEY_SECRET` | Real UPI/card payments |
+| `GOOGLE_MAPS_API_KEY` | Not needed — uses free OpenStreetMap |
+
+The app runs **fully without any API keys** using demo login + mock AI + simulated payments.
+
+---
+
+## 📁 Project Structure
+
+```
+roadside/
+├── app.py                  # Application factory
+├── config.py               # Environment configuration
+├── extensions.py           # Flask extension instances
+├── blueprints/
+│   ├── landing/            # Public landing page
+│   ├── auth/               # Google OAuth + demo login
+│   ├── user/               # User dashboard
+│   ├── mechanic/           # Mechanic dashboard
+│   ├── admin/              # Admin dashboard
+│   ├── api/                # REST API endpoints
+│   └── ai/                 # AI chatbot + ETA
+├── models/                 # SQLAlchemy models
+├── sockets/                # SocketIO real-time events
+├── static/
+│   ├── css/main.css        # Design system
+│   └── js/                 # Maps, payments, AI chat
+├── templates/              # Jinja2 HTML templates
+└── database/roadside.sql   # MySQL schema (for production)
+```
 
 ---
 
 ## 🛠️ Tech Stack
 
-| Layer | Technology |
+- **Backend**: Python 3.10+, Flask, Flask-SQLAlchemy, Flask-SocketIO, Authlib
+- **Frontend**: HTML5, CSS3 (Vanilla), JavaScript (ES6+), Leaflet.js, Chart.js
+- **Database**: SQLite (dev) / MySQL (prod via PyMySQL)
+- **Real-time**: eventlet + Socket.IO
+- **Auth**: Google OAuth 2.0 + session-based demo login
+
+---
+
+## 📱 Demo Accounts
+
+Visit http://localhost:5000 and click any demo button:
+
+| Role | Access |
 |---|---|
-| **Frontend** | React.js + Vite, Redux Toolkit, TailwindCSS |
-| **Backend** | Node.js + Express.js (REST API) |
-| **Database** | MongoDB (Mongoose ODM) |
-| **Real-time** | Socket.IO |
-| **Auth** | JWT + bcrypt + Google OAuth 2.0 |
-| **Maps** | Google Maps JS API + Geolocation API |
-| **Payments** | Stripe API |
-| **Notifications** | Twilio (SMS) + Firebase Cloud Messaging (Push) |
-| **File Storage** | Cloudinary |
-| **Caching** | Redis |
-| **Deployment** | Docker + Nginx + AWS EC2 / Railway |
-| **CI/CD** | GitHub Actions |
+| 👤 **User** | Request assistance, track mechanic, pay, review |
+| 🔧 **Mechanic** | Manage jobs, toggle availability, view earnings |
+| 🛡️ **Admin** | Full platform management, analytics, user control |
 
 ---
 
-## 📂 Project Structure
-
-```
-roadside/
-├── client/                  # React frontend (User + Provider apps)
-│   ├── src/
-│   │   ├── components/
-│   │   ├── pages/
-│   │   ├── store/           # Redux Toolkit slices
-│   │   ├── hooks/
-│   │   ├── services/        # API calls
-│   │   └── utils/
-├── server/                  # Node.js + Express backend
-│   ├── controllers/
-│   ├── models/              # Mongoose schemas
-│   ├── routes/
-│   ├── middleware/
-│   ├── sockets/             # Socket.IO handlers
-│   ├── services/            # Business logic (pricing, notifications)
-│   └── utils/
-├── admin/                   # Admin dashboard (separate React app)
-├── docker-compose.yml
-├── .env.example
-└── README.md
-```
-
----
-
-## 🚀 Getting Started
-
-### Prerequisites
-- Node.js >= 18.x
-- MongoDB Atlas account (or local MongoDB)
-- Google Maps API Key
-- Stripe API Keys
-- Twilio Account SID + Auth Token
-- Firebase project (for FCM)
-
-### Installation
-
-```bash
-# Clone the repo
-git clone https://github.com/smurtiranikhadanga/Roadside-assistance-
-cd roadside
-
-# Install all dependencies
-npm run install:all
-
-# Configure environment variables
-cp .env.example .env
-# Fill in your API keys in .env
-
-# Start development servers
-npm run dev
-```
-
----
-
-## 🌐 API Documentation
-
-Base URL: `http://localhost:5000/api/v1`
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/auth/register` | Register new user |
-| POST | `/auth/login` | Login user |
-| GET | `/services` | Get available service types |
-| POST | `/requests` | Create service request |
-| GET | `/requests/:id` | Get request details |
-| GET | `/providers/nearby` | Get nearby providers |
-| POST | `/payments/intent` | Create Stripe payment intent |
-| POST | `/reviews` | Submit review |
-
-Full API docs: [Swagger UI](http://localhost:5000/api-docs)
-
----
-
-## 🤝 Contributing
-
-1. Fork the repo
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'feat: add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
----
-
-## 📜 License
-
-MIT License — see [LICENSE](LICENSE) for details.
-
----
-
-<p align="center">Built with ❤️ by Smurti Rani Khadanga</p>
+Made with ❤️ in India

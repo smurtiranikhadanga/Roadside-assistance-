@@ -1,21 +1,24 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>{% block title %}RoadSide+{% endblock %}</title>
-  <meta name="description" content="AI-powered roadside assistance — get help anywhere, anytime." />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% block title %}RoadSide+ — AI Roadside Assistance{% endblock %}</title>
+  <meta name="description" content="AI-powered roadside assistance — battery jumpstart, towing, fuel delivery and more."/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}"/>
   {% block extra_css %}{% endblock %}
 </head>
 <body>
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
       <div id="flash-container">
-        {% for category, message in messages %}
-          <div class="flash-msg flash-{{ category }}">{{ message }}</div>
+        {% for cat, msg in messages %}
+          <div class="flash-msg flash-{{ cat }}">
+            {% if cat=='success' %}✅{% elif cat=='danger' %}❌{% elif cat=='warning' %}⚠️{% else %}ℹ️{% endif %}
+            {{ msg }}
+          </div>
         {% endfor %}
       </div>
     {% endif %}
@@ -23,9 +26,7 @@
 
   {% block content %}{% endblock %}
 
-  <!-- Socket.IO -->
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
   <script src="{{ url_for('static', filename='js/main.js') }}"></script>
   {% block extra_js %}{% endblock %}

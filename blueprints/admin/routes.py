@@ -22,7 +22,7 @@ def dashboard():
     from models.user import User
     from models.mechanic import Mechanic
     from models.request import Request, Payment
-    from app import db
+    from extensions import db
     from sqlalchemy import func
 
     stats = {

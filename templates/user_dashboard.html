@@ -1,7 +1,8 @@
 {% extends "base.html" %}
 {% block title %}Dashboard — RoadSide+{% endblock %}
 {% block extra_css %}
-<script src="https://maps.googleapis.com/maps/api/js?key={{ maps_key }}&libraries=places&callback=initMap" async defer></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 {% endblock %}
 
@@ -10,8 +11,8 @@
   <!-- Sidebar -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-logo">
-      <span class="logo-emoji">🚗</span>
-      RoadSide<span class="accent">+</span>
+      <div class="logo-mark">🚗</div>
+      <div class="logo-name">RoadSide<span>+</span></div>
     </div>
     <nav class="sidebar-nav">
       <div class="nav-label">Main</div>
@@ -163,8 +164,8 @@
             <label class="form-label">📝 Describe the issue (optional)</label>
             <textarea class="form-control" id="req-description" placeholder="e.g. Front left tyre puncture on MG Road..."></textarea>
           </div>
-          <div class="card mb-2" style="background:rgba(26,115,232,0.08);border-color:var(--blue)">
-            <div class="text-sm font-bold mb-1">💡 AI Estimate</div>
+          <div class="card mb-2" style="background:#EBF5FF;border:1.5px solid #BDD9F7">
+            <div class="text-sm font-bold mb-1" style="color:#1E3A5F">💡 AI Estimate</div>
             <div id="ai-eta-info" class="text-sm text-muted">Select a service to get AI ETA prediction...</div>
           </div>
           <button class="btn btn-danger btn-lg w-full" onclick="submitRequest()" id="submit-req-btn">
@@ -179,7 +180,7 @@
           <h2 class="font-bold" style="font-size:1.5rem">📡 Request Tracking</h2>
         </div>
         <div id="no-active-request" class="card text-muted text-sm" style="text-align:center;padding:3rem">
-          No active requests. <a onclick="showSection('emergency')" style="color:var(--blue);cursor:pointer">Request assistance →</a>
+          No active requests. <a onclick="showSection('emergency')" style="color:#4A90D9;cursor:pointer">Request assistance →</a>
         </div>
         <div id="active-request-card" class="hidden">
           <div class="card mb-3">
@@ -205,7 +206,7 @@
           <!-- Chat -->
           <div class="card">
             <div class="card-title">💬 Chat with Mechanic</div>
-            <div id="chat-messages" style="height:200px;overflow-y:auto;display:flex;flex-direction:column;gap:0.5rem;padding:0.5rem;background:rgba(0,0,0,0.2);border-radius:var(--radius);margin-bottom:0.75rem"></div>
+            <div id="chat-messages" style="height:200px;overflow-y:auto;display:flex;flex-direction:column;gap:0.5rem;padding:0.75rem;background:#F8FAFC;border-radius:12px;margin-bottom:0.75rem;border:1px solid #E5EAF0"></div>
             <div class="flex gap-1">
               <input class="form-control" id="chat-input-field" placeholder="Type a message..." onkeydown="if(event.key==='Enter') sendChatMessage()" />
               <button class="btn btn-primary" onclick="sendChatMessage()">Send</button>
@@ -361,7 +362,8 @@
 <script>
   const USER_ID    = {{ current_user.id }};
   const USER_NAME  = "{{ current_user.name }}";
-  const RZP_KEY    = "{{ razorpay_key }}";
+  const RZP_KEY    = "{{ config.RAZORPAY_KEY_ID if config.RAZORPAY_KEY_ID and config.RAZORPAY_KEY_ID != 'YOUR_RAZORPAY_KEY_ID' else '' }}";
+  const PENDING_SERVICE = "{{ request.args.get('service', '') }}";
   let selectedService = null;
   let currentRequestId = null;
   let userLat = null, userLng = null;
@@ -373,4 +375,12 @@
 <script src="{{ url_for('static', filename='js/payment.js') }}"></script>
 <script src="{{ url_for('static', filename='js/ai-chat.js') }}"></script>
 <script src="{{ url_for('static', filename='js/user.js') }}"></script>
+<script>
+  // Auto-open service section if redirected from landing page
+  if (PENDING_SERVICE) {
+    setTimeout(() => { showSection('emergency'); selectService(PENDING_SERVICE); }, 400);
+  }
+  // Init Leaflet map
+  window.addEventListener('load', () => setTimeout(initMap, 100));
+</script>
 {% endblock %}

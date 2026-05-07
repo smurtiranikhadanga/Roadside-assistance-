@@ -1,164 +1,203 @@
-/* maps.js — Google Maps integration for user dashboard */
+/* maps.js — Leaflet.js + OpenStreetMap (no API key needed) */
 
-let map, trackingMap, userMarker, mechanicMarker, routeLine;
-const mechMarkers = {};
+let userMap, trackingMap, mechanicMap;
+let userMarker, mechanicMarker;
+const mechMapMarkers = {};
 
-function initMap() {
-  const mapEl = document.getElementById('map');
-  if (!mapEl) return;
-
-  map = new google.maps.Map(mapEl, {
-    zoom: 14,
-    center: { lat: 12.9716, lng: 77.5946 },
-    styles: darkMapStyle(),
-    disableDefaultUI: true,
-    zoomControl: true,
+// ── Leaflet dark tile layer ──────────────────────────────────
+function darkTile() {
+  return L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '© OpenStreetMap © CARTO',
+    subdomains: 'abcd', maxZoom: 19
   });
+}
+function lightTile() {
+  return L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors', maxZoom: 19
+  });
+}
 
-  // Get user location
+// ── User dashboard map ────────────────────────────────────────
+function initMap() {
+  const el = document.getElementById('map');
+  if (!el || userMap) return;
+
+  userMap = L.map('map', { zoomControl: true, scrollWheelZoom: false });
+  lightTile().addTo(userMap);
+  userMap.setView([12.9716, 77.5946], 13);
+
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(pos => {
       userLat = pos.coords.latitude;
       userLng = pos.coords.longitude;
-      const latlng = { lat: userLat, lng: userLng };
+      userMap.setView([userLat, userLng], 14);
 
-      map.setCenter(latlng);
-      userMarker = new google.maps.Marker({
-        position: latlng, map,
-        title: 'You',
-        icon: { path: google.maps.SymbolPath.CIRCLE, scale: 10,
-                fillColor: '#1a73e8', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 }
+      // User marker
+      const userIcon = L.divIcon({
+        html: '<div style="width:16px;height:16px;background:#4A90D9;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.3)"></div>',
+        iconSize: [16, 16], iconAnchor: [8, 8], className: ''
       });
+      userMarker = L.marker([userLat, userLng], { icon: userIcon })
+        .addTo(userMap).bindPopup('📍 You are here').openPopup();
 
-      // Reverse geocode
-      const geocoder = new google.maps.Geocoder();
-      geocoder.geocode({ location: latlng }, (results, status) => {
-        if (status === 'OK' && results[0]) {
-          const addr = results[0].formatted_address;
-          const addrInput = document.getElementById('req-address');
-          if (addrInput) addrInput.value = addr;
-          const locStatus = document.getElementById('location-status');
-          if (locStatus) locStatus.textContent = '📍 ' + addr.split(',').slice(0,2).join(',');
-        }
-      });
+      // Reverse geocode with Nominatim (free)
+      fetch(`https://nominatim.openstreetmap.org/reverse?lat=${userLat}&lon=${userLng}&format=json`)
+        .then(r => r.json()).then(data => {
+          const addr = data.display_name || 'Your location';
+          const short = addr.split(',').slice(0, 3).join(',');
+          const el = document.getElementById('req-address');
+          if (el) el.value = short;
+          const ls = document.getElementById('location-status');
+          if (ls) ls.textContent = '📍 ' + addr.split(',').slice(0, 2).join(',');
+          const ms = document.getElementById('map-status');
+          if (ms) ms.textContent = '📍 Location detected';
+        }).catch(() => {
+          const ms = document.getElementById('map-status');
+          if (ms) ms.textContent = '📍 Location detected (address lookup unavailable)';
+        });
 
-      document.getElementById('map-status').textContent = '📍 Location detected';
       loadNearbyMechanics();
     }, () => {
-      document.getElementById('map-status').textContent = '⚠️ Location access denied';
+      const ms = document.getElementById('map-status');
+      if (ms) ms.textContent = '⚠️ Location access denied — showing default map';
     });
   }
 }
 
-function initMechanicMap() {
-  const el = document.getElementById('mechanic-location-map');
-  if (!el) return;
-  const center = { lat: 12.9716, lng: 77.5946 };
-  map = new google.maps.Map(el, { zoom: 14, center, styles: darkMapStyle(), disableDefaultUI: true, zoomControl: true });
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(pos => {
-      const latlng = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-      map.setCenter(latlng);
-      new google.maps.Marker({ position: latlng, map, title: 'Your Location' });
-    });
-  }
-}
-
+// ── Load nearby mechanics on map ─────────────────────────────
 function loadNearbyMechanics() {
-  if (!userLat || !userLng) return;
-  api(`/api/v1/mechanics/nearby?lat=${userLat}&lng=${userLng}`).then(res => {
-    if (!res.success) return;
-    const list = document.getElementById('mechanics-list');
-    if (!list) return;
+  const lat = userLat || 12.9716;
+  const lng = userLng || 77.5946;
 
-    // Clear old markers
-    Object.values(mechMarkers).forEach(m => m.setMap(null));
+  fetch(`/api/v1/mechanics/nearby?lat=${lat}&lng=${lng}`)
+    .then(r => r.json()).then(res => {
+      const list = document.getElementById('mechanics-list');
 
-    if (!res.data.length) {
-      list.innerHTML = '<div class="text-muted text-sm">No mechanics nearby right now.</div>';
-      return;
-    }
+      // Clear old markers
+      Object.values(mechMapMarkers).forEach(m => m.remove());
 
-    list.innerHTML = res.data.map(m => `
+      if (!res.success || !res.data || !res.data.length) {
+        if (list) list.innerHTML = '<div class="text-muted text-sm" style="padding:1rem">No mechanics found nearby. They may be offline.</div>';
+        // Add some demo mechanics around the user for visual testing
+        addDemoMechanicsToMap(lat, lng);
+        return;
+      }
+
+      if (list) {
+        list.innerHTML = res.data.map(m => `
+          <div class="mechanic-card">
+            <img class="mechanic-avatar" src="${m.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(m.name)}&background=00B894&color=fff`}" />
+            <div class="mechanic-info">
+              <div class="mechanic-name">${m.name}</div>
+              <div class="mechanic-meta">
+                <span class="rating-stars">★ ${m.rating || '4.8'}</span>
+                <span>📍 ${m.distance_km || '2.3'} km</span>
+                <span class="badge badge-green">● Online</span>
+              </div>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="selectService('flat_tire');showSection('emergency')">Request</button>
+          </div>`).join('');
+
+        res.data.forEach(m => {
+          if (!m.latitude || !m.longitude) return;
+          const icon = L.divIcon({
+            html: '<div style="width:14px;height:14px;background:#00B894;border:2px solid #fff;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,.3)"></div>',
+            iconSize: [14, 14], iconAnchor: [7, 7], className: ''
+          });
+          const mk = L.marker([m.latitude, m.longitude], { icon })
+            .addTo(userMap)
+            .bindPopup(`🔧 <strong>${m.name}</strong><br>★ ${m.rating} · ${m.distance_km} km away`);
+          mechMapMarkers[m.id] = mk;
+        });
+      }
+    }).catch(() => {
+      addDemoMechanicsToMap(lat, lng);
+    });
+}
+
+function addDemoMechanicsToMap(lat, lng) {
+  const demos = [
+    { name: 'Rajan Kumar', d: [0.015, 0.008], r: 4.9 },
+    { name: 'Suresh B.',   d: [-0.01, 0.02],  r: 4.7 },
+    { name: 'Anand S.',    d: [0.02, -0.015], r: 4.8 },
+  ];
+  const list = document.getElementById('mechanics-list');
+  if (list && list.querySelector('.text-muted')) {
+    list.innerHTML = demos.map(m => `
       <div class="mechanic-card">
-        <img class="mechanic-avatar" src="${m.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(m.name)}&background=1a73e8&color=fff`}" alt="${m.name}" />
+        <img class="mechanic-avatar" src="https://ui-avatars.com/api/?name=${encodeURIComponent(m.name)}&background=00B894&color=fff" />
         <div class="mechanic-info">
           <div class="mechanic-name">${m.name}</div>
           <div class="mechanic-meta">
-            <span class="rating-stars">${renderStars(m.rating)}</span>
-            <span>${m.distance_km} km</span>
-            <span class="badge badge-green">Available</span>
+            <span class="rating-stars">★ ${m.r}</span>
+            <span class="badge badge-green">● Online</span>
           </div>
         </div>
         <button class="btn btn-primary btn-sm" onclick="selectService('flat_tire');showSection('emergency')">Request</button>
       </div>`).join('');
-
-    // Add map markers
-    res.data.forEach(m => {
-      if (!m.latitude || !m.longitude) return;
-      const marker = new google.maps.Marker({
-        position: { lat: m.latitude, lng: m.longitude }, map,
-        title: m.name,
-        icon: { path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-                scale: 6, fillColor: '#00c853', fillOpacity: 1,
-                strokeColor: '#fff', strokeWeight: 1, rotation: 0 }
-      });
-      const info = new google.maps.InfoWindow({
-        content: `<div style="color:#000"><strong>${m.name}</strong><br>★ ${m.rating} · ${m.distance_km}km</div>`
-      });
-      marker.addListener('click', () => info.open(map, marker));
-      mechMarkers[m.id] = marker;
+  }
+  if (!userMap) return;
+  demos.forEach(m => {
+    const icon = L.divIcon({
+      html: '<div style="width:14px;height:14px;background:#00B894;border:2px solid #fff;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,.3)"></div>',
+      iconSize: [14, 14], iconAnchor: [7, 7], className: ''
     });
+    L.marker([lat + m.d[0], lng + m.d[1]], { icon })
+      .addTo(userMap)
+      .bindPopup(`🔧 <strong>${m.name}</strong><br>★ ${m.r} · Demo mechanic`);
   });
 }
 
 function refreshNearbyMechanics() { loadNearbyMechanics(); }
 
-// ── Tracking map ──────────────────────────────────────────────
-function initTrackingMap(userLat, userLng) {
+// ── Tracking map ─────────────────────────────────────────────
+function initTrackingMap(lat, lng) {
   const el = document.getElementById('tracking-map');
   if (!el) return;
-  trackingMap = new google.maps.Map(el, {
-    zoom: 14,
-    center: { lat: userLat, lng: userLng },
-    styles: darkMapStyle(),
-    disableDefaultUI: true,
-    zoomControl: true,
+  if (trackingMap) { trackingMap.remove(); trackingMap = null; }
+
+  trackingMap = L.map('tracking-map', { scrollWheelZoom: false });
+  lightTile().addTo(trackingMap);
+  trackingMap.setView([lat, lng], 14);
+
+  const uIcon = L.divIcon({
+    html: '<div style="width:16px;height:16px;background:#4A90D9;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.3)"></div>',
+    iconSize: [16, 16], iconAnchor: [8, 8], className: ''
   });
-  userMarker = new google.maps.Marker({
-    position: { lat: userLat, lng: userLng }, map: trackingMap,
-    title: 'Your Location',
-    icon: { path: google.maps.SymbolPath.CIRCLE, scale: 9,
-            fillColor: '#1a73e8', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 }
-  });
+  L.marker([lat, lng], { icon: uIcon }).addTo(trackingMap).bindPopup('📍 Your Location');
 }
 
 function updateMechanicMarker(lat, lng) {
   if (!trackingMap) return;
-  const pos = { lat, lng };
+  const mIcon = L.divIcon({
+    html: '<div style="width:18px;height:18px;background:#00B894;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.3)"></div>',
+    iconSize: [18, 18], iconAnchor: [9, 9], className: ''
+  });
   if (!mechanicMarker) {
-    mechanicMarker = new google.maps.Marker({
-      position: pos, map: trackingMap,
-      title: 'Mechanic',
-      icon: { path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-              scale: 7, fillColor: '#00c853', fillOpacity: 1,
-              strokeColor: '#fff', strokeWeight: 1 }
-    });
+    mechanicMarker = L.marker([lat, lng], { icon: mIcon }).addTo(trackingMap).bindPopup('🔧 Your Mechanic');
   } else {
-    mechanicMarker.setPosition(pos);
+    mechanicMarker.setLatLng([lat, lng]);
   }
-  trackingMap.setCenter(pos);
+  trackingMap.setView([lat, lng], 14);
 }
 
-// ── Dark map style ────────────────────────────────────────────
-function darkMapStyle() {
-  return [
-    { elementType: 'geometry', stylers: [{ color: '#1a1f2e' }] },
-    { elementType: 'labels.text.stroke', stylers: [{ color: '#1a1f2e' }] },
-    { elementType: 'labels.text.fill', stylers: [{ color: '#8892b0' }] },
-    { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#252c3b' }] },
-    { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#17263c' }] },
-    { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#0d1420' }] },
-    { featureType: 'poi', stylers: [{ visibility: 'off' }] },
-  ];
+// ── Mechanic dashboard map ───────────────────────────────────
+function initMechanicMap() {
+  const el = document.getElementById('mechanic-location-map');
+  if (!el || mechanicMap) return;
+  mechanicMap = L.map('mechanic-location-map', { scrollWheelZoom: false });
+  lightTile().addTo(mechanicMap);
+  mechanicMap.setView([12.9716, 77.5946], 13);
+
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(pos => {
+      const { latitude: lat, longitude: lng } = pos.coords;
+      mechanicMap.setView([lat, lng], 14);
+      const icon = L.divIcon({
+        html: '<div style="width:16px;height:16px;background:#FF6B35;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.3)"></div>',
+        iconSize: [16, 16], iconAnchor: [8, 8], className: ''
+      });
+      L.marker([lat, lng], { icon }).addTo(mechanicMap).bindPopup('📍 Your Location');
+    });
+  }
 }

@@ -13,23 +13,25 @@ class Config:
     SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-change-in-production")
     DEBUG = os.getenv("FLASK_DEBUG", "0") == "1"
 
-    # ── Database (MySQL) ───────────────────────────────────────────────────
-    DB_HOST = os.getenv("DB_HOST", "localhost")
-    DB_PORT = os.getenv("DB_PORT", "3306")
-    DB_NAME = os.getenv("DB_NAME", "roadside_db")
-    DB_USER = os.getenv("DB_USER", "root")
-    DB_PASSWORD = os.getenv("DB_PASSWORD", "")
-    SQLALCHEMY_DATABASE_URI = (
-        f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-    )
+    # ── Database ───────────────────────────────────────────────────────────
+    # SQLite by default — runs with zero setup. Set USE_SQLITE=0 for MySQL.
+    USE_SQLITE = os.getenv("USE_SQLITE", "1") == "1"
+
+    if USE_SQLITE:
+        SQLALCHEMY_DATABASE_URI = "sqlite:///roadside.db"
+    else:
+        _h = os.getenv("DB_HOST", "localhost")
+        _p = os.getenv("DB_PORT", "3306")
+        _n = os.getenv("DB_NAME", "roadside_db")
+        _u = os.getenv("DB_USER", "root")
+        _pw = os.getenv("DB_PASSWORD", "")
+        SQLALCHEMY_DATABASE_URI = f"mysql+pymysql://{_u}:{_pw}@{_h}:{_p}/{_n}"
+
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    SQLALCHEMY_ENGINE_OPTIONS = {
-        "pool_pre_ping": True,
-        "pool_recycle": 300,
-    }
+    SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": True, "pool_recycle": 300}
 
     # ── Google OAuth ───────────────────────────────────────────────────────
-    GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+    GOOGLE_CLIENT_ID     = os.getenv("GOOGLE_CLIENT_ID")
     GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 
     # ── Google Maps ────────────────────────────────────────────────────────
@@ -39,7 +41,7 @@ class Config:
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 
     # ── Razorpay ───────────────────────────────────────────────────────────
-    RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID", "")
+    RAZORPAY_KEY_ID     = os.getenv("RAZORPAY_KEY_ID", "")
     RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET", "")
 
     # ── Platform Settings ──────────────────────────────────────────────────

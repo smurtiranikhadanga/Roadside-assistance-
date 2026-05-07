@@ -1,7 +1,7 @@
 """
 Request, Payment, Review, Notification, EmergencyLog models.
 """
-from app import db
+from extensions import db
 from datetime import datetime
 
 

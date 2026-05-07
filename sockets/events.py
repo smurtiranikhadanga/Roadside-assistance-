@@ -65,7 +65,7 @@ def register_events(socketio):
 
         # Find which user is tracking this request
         from models.request import Request
-        from app import db
+        from extensions import db
         req = Request.query.get(request_id)
         if req and req.status in ("accepted", "traveling", "reached"):
             # Calculate updated ETA (simple formula)
@@ -127,7 +127,7 @@ def register_events(socketio):
     def handle_status_update(data):
         """Mechanic updates job status; notify user."""
         from models.request import Request
-        from app import db
+        from extensions import db
         from datetime import datetime
 
         request_id = data.get("request_id")
@@ -168,7 +168,7 @@ def register_events(socketio):
     def handle_sos(data):
         """User triggers SOS — log and notify admin room."""
         from models.request import EmergencyLog
-        from app import db
+        from extensions import db
 
         user_id = data.get("user_id")
         lat     = data.get("lat")
