@@ -1,10 +1,11 @@
 /* ═══════════════════════════════════════════════════════════════
    nearby.js — Real places from Overpass API (OSM) + OSRM routing
-   Petrol pumps, mechanics, toll gates — all FREE, no API key
+   Petrol pumps, mechanics, toll gates — displayed on Google Maps
 ═══════════════════════════════════════════════════════════════ */
 
 const NearbyPlaces = {
   cache: {},
+  // markers.all stores {marker, infoWindow, lat, lng} objects
   markers: { fuel: [], mechanic: [], toll: [], all: [] },
   selectedPlace: null,
 
@@ -91,7 +92,7 @@ const NearbyPlaces = {
     if (panel) panel.innerHTML = `<div class="nearby-loading"><div class="spinner"></div> Fetching real nearby places...</div>`;
 
     // Clear old markers
-    this.markers.all.forEach(m => m.remove());
+    this.markers.all.forEach(({ marker }) => marker.setMap(null));
     this.markers.all = [];
 
     const results = {};
@@ -110,25 +111,36 @@ const NearbyPlaces = {
       results[cat] = places.sort((a, b) => (a.duration || 999) - (b.duration || 999));
     }));
 
-    // Plot on map
+    // Plot on map (Google Maps markers)
     Object.keys(results).map(cat => {
       const cfg = this.CATEGORIES[cat];
       results[cat].forEach(p => {
-        const icon = L.divIcon({
-          html: `<div style="
-            width:32px;height:32px;border-radius:50%;
-            background:${cfg.markerColor};border:3px solid #fff;
-            display:flex;align-items:center;justify-content:center;
-            font-size:.9rem;box-shadow:0 3px 10px rgba(0,0,0,.25);
-            cursor:pointer;transition:transform .15s;
-          ">${cfg.icon}</div>`,
-          iconSize: [32, 32], iconAnchor: [16, 16], className: '',
+        const marker = new google.maps.Marker({
+          position: { lat: p.lat, lng: p.lng },
+          map: userMap,
+          title: p.name,
+          label: {
+            text: cfg.icon,
+            fontSize: '14px',
+          },
+          icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            scale: 16,
+            fillColor: cfg.markerColor,
+            fillOpacity: 0.9,
+            strokeColor: '#ffffff',
+            strokeWeight: 2,
+          },
         });
-        const mk = L.marker([p.lat, p.lng], { icon })
-          .addTo(userMap)
-          .bindPopup(this.buildPopup(p), { maxWidth: 280 });
-        mk.on('click', () => this.showPlaceDetail(p, lat, lng));
-        this.markers.all.push(mk);
+        const iw = new google.maps.InfoWindow({
+          content: this.buildPopup(p),
+          maxWidth: 280,
+        });
+        marker.addListener('click', () => {
+          iw.open(userMap, marker);
+          this.showPlaceDetail(p, lat, lng);
+        });
+        this.markers.all.push({ marker, infoWindow: iw, lat: p.lat, lng: p.lng });
       });
     });
 
@@ -234,12 +246,12 @@ const NearbyPlaces = {
 
   selectItem(lat, lng) {
     if (!userMap) return;
-    userMap.flyTo([lat, lng], 16, { duration: 1 });
-    // Find and open popup
-    this.markers.all.forEach(m => {
-      const pos = m.getLatLng();
-      if (Math.abs(pos.lat - lat) < 0.0001 && Math.abs(pos.lng - lng) < 0.0001) {
-        m.openPopup();
+    userMap.panTo({ lat, lng });
+    userMap.setZoom(16);
+    // Find and open matching info window
+    this.markers.all.forEach(({ marker, infoWindow, lat: mLat, lng: mLng }) => {
+      if (Math.abs(mLat - lat) < 0.0001 && Math.abs(mLng - lng) < 0.0001) {
+        infoWindow.open(userMap, marker);
       }
     });
   },

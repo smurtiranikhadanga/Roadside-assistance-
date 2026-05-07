@@ -1,52 +1,64 @@
-/* maps.js — Leaflet.js + OpenStreetMap (no API key needed) */
+/* maps.js — Google Maps API */
 
 let userMap, trackingMap, mechanicMap;
 let userMarker, mechanicMarker;
 const mechMapMarkers = {};
 
-// ── Leaflet dark tile layer ──────────────────────────────────
-function darkTile() {
-  return L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    attribution: '© OpenStreetMap © CARTO',
-    subdomains: 'abcd', maxZoom: 19
-  });
-}
-function lightTile() {
-  return L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap contributors', maxZoom: 19
-  });
-}
+// Shared InfoWindow reused across markers on each map
+let userInfoWindow = null;
+let trackingInfoWindow = null;
+let mechanicInfoWindow = null;
 
-// ── User dashboard map ────────────────────────────────────────
+// ── User dashboard map (callback from Google Maps script) ─────
 function initMap() {
   const el = document.getElementById('map');
   if (!el || userMap) return;
 
-  userMap = L.map('map', { zoomControl: true, scrollWheelZoom: false });
-  lightTile().addTo(userMap);
-  userMap.setView([12.9716, 77.5946], 13);
+  userInfoWindow = new google.maps.InfoWindow();
+
+  userMap = new google.maps.Map(el, {
+    center: { lat: 12.9716, lng: 77.5946 },
+    zoom: 13,
+    scrollwheel: false,
+    mapTypeControl: false,
+    streetViewControl: false,
+    fullscreenControl: false,
+    zoomControl: true,
+  });
 
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(pos => {
       userLat = pos.coords.latitude;
       userLng = pos.coords.longitude;
-      userMap.setView([userLat, userLng], 14);
+      userMap.setCenter({ lat: userLat, lng: userLng });
+      userMap.setZoom(14);
 
-      // User marker
-      const userIcon = L.divIcon({
-        html: '<div style="width:16px;height:16px;background:#4A90D9;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.3)"></div>',
-        iconSize: [16, 16], iconAnchor: [8, 8], className: ''
+      // User marker (blue dot)
+      userMarker = new google.maps.Marker({
+        position: { lat: userLat, lng: userLng },
+        map: userMap,
+        title: 'You are here',
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: 9,
+          fillColor: '#4A90D9',
+          fillOpacity: 1,
+          strokeColor: '#ffffff',
+          strokeWeight: 3,
+        },
+        zIndex: 999,
       });
-      userMarker = L.marker([userLat, userLng], { icon: userIcon })
-        .addTo(userMap).bindPopup('📍 You are here').openPopup();
 
-      // Reverse geocode
+      userInfoWindow.setContent('<div style="font-size:.85rem;font-weight:600;color:#1E3A5F">📍 You are here</div>');
+      userInfoWindow.open(userMap, userMarker);
+
+      // Reverse geocode via Nominatim
       fetch(`https://nominatim.openstreetmap.org/reverse?lat=${userLat}&lon=${userLng}&format=json`)
         .then(r => r.json()).then(data => {
           const addr = data.display_name || 'Your location';
           const short = addr.split(',').slice(0, 3).join(',');
-          const el = document.getElementById('req-address');
-          if (el) el.value = short;
+          const addrEl = document.getElementById('req-address');
+          if (addrEl) addrEl.value = short;
           const ls = document.getElementById('location-status');
           if (ls) ls.textContent = '📍 ' + addr.split(',').slice(0, 2).join(',');
           const ms = document.getElementById('map-status');
@@ -76,11 +88,10 @@ function loadNearbyMechanics() {
       const list = document.getElementById('mechanics-list');
 
       // Clear old markers
-      Object.values(mechMapMarkers).forEach(m => m.remove());
+      Object.values(mechMapMarkers).forEach(m => m.setMap(null));
 
       if (!res.success || !res.data || !res.data.length) {
         if (list) list.innerHTML = '<div class="text-muted text-sm" style="padding:1rem">No mechanics found nearby. They may be offline.</div>';
-        // Add some demo mechanics around the user for visual testing
         addDemoMechanicsToMap(lat, lng);
         return;
       }
@@ -102,14 +113,24 @@ function loadNearbyMechanics() {
 
         res.data.forEach(m => {
           if (!m.latitude || !m.longitude) return;
-          const icon = L.divIcon({
-            html: '<div style="width:14px;height:14px;background:#00B894;border:2px solid #fff;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,.3)"></div>',
-            iconSize: [14, 14], iconAnchor: [7, 7], className: ''
+          const marker = new google.maps.Marker({
+            position: { lat: m.latitude, lng: m.longitude },
+            map: userMap,
+            title: m.name,
+            icon: {
+              path: google.maps.SymbolPath.CIRCLE,
+              scale: 8,
+              fillColor: '#00B894',
+              fillOpacity: 1,
+              strokeColor: '#ffffff',
+              strokeWeight: 2,
+            },
           });
-          const mk = L.marker([m.latitude, m.longitude], { icon })
-            .addTo(userMap)
-            .bindPopup(`🔧 <strong>${m.name}</strong><br>★ ${m.rating} · ${m.distance_km} km away`);
-          mechMapMarkers[m.id] = mk;
+          const iw = new google.maps.InfoWindow({
+            content: `<div style="font-size:.82rem"><strong>🔧 ${m.name}</strong><br>★ ${m.rating} · ${m.distance_km} km away</div>`,
+          });
+          marker.addListener('click', () => iw.open(userMap, marker));
+          mechMapMarkers[m.id] = marker;
         });
       }
     }).catch(() => {
@@ -140,13 +161,23 @@ function addDemoMechanicsToMap(lat, lng) {
   }
   if (!userMap) return;
   demos.forEach(m => {
-    const icon = L.divIcon({
-      html: '<div style="width:14px;height:14px;background:#00B894;border:2px solid #fff;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,.3)"></div>',
-      iconSize: [14, 14], iconAnchor: [7, 7], className: ''
+    const marker = new google.maps.Marker({
+      position: { lat: lat + m.d[0], lng: lng + m.d[1] },
+      map: userMap,
+      title: m.name,
+      icon: {
+        path: google.maps.SymbolPath.CIRCLE,
+        scale: 8,
+        fillColor: '#00B894',
+        fillOpacity: 1,
+        strokeColor: '#ffffff',
+        strokeWeight: 2,
+      },
     });
-    L.marker([lat + m.d[0], lng + m.d[1]], { icon })
-      .addTo(userMap)
-      .bindPopup(`🔧 <strong>${m.name}</strong><br>★ ${m.r} · Demo mechanic`);
+    const iw = new google.maps.InfoWindow({
+      content: `<div style="font-size:.82rem"><strong>🔧 ${m.name}</strong><br>★ ${m.r} · Demo mechanic</div>`,
+    });
+    marker.addListener('click', () => iw.open(userMap, marker));
   });
 }
 
@@ -156,50 +187,107 @@ function refreshNearbyMechanics() { loadNearbyMechanics(); }
 function initTrackingMap(lat, lng) {
   const el = document.getElementById('tracking-map');
   if (!el) return;
-  if (trackingMap) { trackingMap.remove(); trackingMap = null; }
 
-  trackingMap = L.map('tracking-map', { scrollWheelZoom: false });
-  lightTile().addTo(trackingMap);
-  trackingMap.setView([lat, lng], 14);
+  if (trackingMap) {
+    trackingMap = null;
+    el.innerHTML = '';
+  }
 
-  const uIcon = L.divIcon({
-    html: '<div style="width:16px;height:16px;background:#4A90D9;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.3)"></div>',
-    iconSize: [16, 16], iconAnchor: [8, 8], className: ''
+  trackingInfoWindow = new google.maps.InfoWindow();
+
+  trackingMap = new google.maps.Map(el, {
+    center: { lat, lng },
+    zoom: 14,
+    scrollwheel: false,
+    mapTypeControl: false,
+    streetViewControl: false,
+    fullscreenControl: false,
   });
-  L.marker([lat, lng], { icon: uIcon }).addTo(trackingMap).bindPopup('📍 Your Location');
+
+  const uMarker = new google.maps.Marker({
+    position: { lat, lng },
+    map: trackingMap,
+    title: 'Your Location',
+    icon: {
+      path: google.maps.SymbolPath.CIRCLE,
+      scale: 9,
+      fillColor: '#4A90D9',
+      fillOpacity: 1,
+      strokeColor: '#ffffff',
+      strokeWeight: 3,
+    },
+    zIndex: 999,
+  });
+  uMarker.addListener('click', () => {
+    trackingInfoWindow.setContent('<div style="font-size:.82rem;font-weight:600">📍 Your Location</div>');
+    trackingInfoWindow.open(trackingMap, uMarker);
+  });
 }
 
 function updateMechanicMarker(lat, lng) {
   if (!trackingMap) return;
-  const mIcon = L.divIcon({
-    html: '<div style="width:18px;height:18px;background:#00B894;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.3)"></div>',
-    iconSize: [18, 18], iconAnchor: [9, 9], className: ''
-  });
   if (!mechanicMarker) {
-    mechanicMarker = L.marker([lat, lng], { icon: mIcon }).addTo(trackingMap).bindPopup('🔧 Your Mechanic');
+    mechanicMarker = new google.maps.Marker({
+      position: { lat, lng },
+      map: trackingMap,
+      title: 'Your Mechanic',
+      icon: {
+        path: google.maps.SymbolPath.CIRCLE,
+        scale: 10,
+        fillColor: '#00B894',
+        fillOpacity: 1,
+        strokeColor: '#ffffff',
+        strokeWeight: 3,
+      },
+    });
+    mechanicMarker.addListener('click', () => {
+      trackingInfoWindow.setContent('<div style="font-size:.82rem;font-weight:600">🔧 Your Mechanic</div>');
+      trackingInfoWindow.open(trackingMap, mechanicMarker);
+    });
   } else {
-    mechanicMarker.setLatLng([lat, lng]);
+    mechanicMarker.setPosition({ lat, lng });
   }
-  trackingMap.setView([lat, lng], 14);
+  trackingMap.setCenter({ lat, lng });
 }
 
 // ── Mechanic dashboard map ───────────────────────────────────
 function initMechanicMap() {
   const el = document.getElementById('mechanic-location-map');
   if (!el || mechanicMap) return;
-  mechanicMap = L.map('mechanic-location-map', { scrollWheelZoom: false });
-  lightTile().addTo(mechanicMap);
-  mechanicMap.setView([12.9716, 77.5946], 13);
+
+  mechanicInfoWindow = new google.maps.InfoWindow();
+
+  mechanicMap = new google.maps.Map(el, {
+    center: { lat: 12.9716, lng: 77.5946 },
+    zoom: 13,
+    scrollwheel: false,
+    mapTypeControl: false,
+    streetViewControl: false,
+    fullscreenControl: false,
+  });
 
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(pos => {
       const { latitude: lat, longitude: lng } = pos.coords;
-      mechanicMap.setView([lat, lng], 14);
-      const icon = L.divIcon({
-        html: '<div style="width:16px;height:16px;background:#FF6B35;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.3)"></div>',
-        iconSize: [16, 16], iconAnchor: [8, 8], className: ''
+      mechanicMap.setCenter({ lat, lng });
+      mechanicMap.setZoom(14);
+      const mk = new google.maps.Marker({
+        position: { lat, lng },
+        map: mechanicMap,
+        title: 'Your Location',
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: 9,
+          fillColor: '#FF6B35',
+          fillOpacity: 1,
+          strokeColor: '#ffffff',
+          strokeWeight: 3,
+        },
       });
-      L.marker([lat, lng], { icon }).addTo(mechanicMap).bindPopup('📍 Your Location');
+      mk.addListener('click', () => {
+        mechanicInfoWindow.setContent('<div style="font-size:.82rem;font-weight:600">📍 Your Location</div>');
+        mechanicInfoWindow.open(mechanicMap, mk);
+      });
     });
   }
 }

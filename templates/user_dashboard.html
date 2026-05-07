@@ -1,8 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Dashboard — RoadSide+{% endblock %}
 {% block extra_css %}
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 {% endblock %}
 
@@ -110,7 +108,7 @@
         <div class="card mb-3">
           <div class="flex items-center justify-between mb-2">
             <div class="card-title mb-0">🗺️ Nearby — Real-Time Places</div>
-            <div style="font-size:.75rem;color:#9AA5B4">Live data · OpenStreetMap</div>
+            <div style="font-size:.75rem;color:#9AA5B4">Live data · Google Maps</div>
           </div>
           <div id="nearby-list">
             <div class="nearby-loading" style="text-align:center;padding:2rem;color:#9AA5B4;font-size:.875rem">
@@ -426,6 +424,7 @@
   if (PENDING_SERVICE) {
     setTimeout(() => { showSection('emergency'); selectService(PENDING_SERVICE); }, 400);
   }
-  window.addEventListener('load', () => setTimeout(initMap, 100));
 </script>
+{# Google Maps JS API — callback triggers initMap() defined in maps.js #}
+<script src="https://maps.googleapis.com/maps/api/js?key={{ config.GOOGLE_MAPS_API_KEY }}&callback=initMap" async defer></script>
 {% endblock %}

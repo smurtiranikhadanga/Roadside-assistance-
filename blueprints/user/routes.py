@@ -13,7 +13,9 @@ def dashboard():
         return redirect(url_for("mechanic.dashboard"))
     if current_user.role == "admin":
         return redirect(url_for("admin.dashboard"))
-    return render_template("user_dashboard.html", config=current_app.config)
+    return render_template("user_dashboard.html",
+                           config=current_app.config,
+                           maps_key=current_app.config["GOOGLE_MAPS_API_KEY"])
 
 
 @user_bp.route("/profile", methods=["GET", "POST"])
