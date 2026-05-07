@@ -68,6 +68,10 @@ async function submitRequest() {
   if (res.success) {
     currentRequestId = res.data.id;
     showToast('✅ Request submitted! Mechanic assigned.', 'success');
+    // Notify AI to start guiding the user
+    if (typeof notifyAIRequestSubmitted === 'function') {
+      notifyAIRequestSubmitted(selectedService);
+    }
     showSection('tracking');
     displayActiveRequest(res.data);
   } else {
