@@ -95,19 +95,34 @@
           </div>
         </div>
 
-        <!-- Map -->
         <div class="card mb-3">
           <div class="flex items-center justify-between mb-2">
-            <div class="card-title mb-1">📍 Live Map — Nearby Mechanics</div>
-            <button class="btn btn-ghost btn-sm" onclick="refreshNearbyMechanics()">🔄 Refresh</button>
+            <div class="card-title mb-1">📍 Live Map — Nearby Places</div>
+            <div style="display:flex;gap:.5rem">
+              <button class="btn btn-ghost btn-sm" onclick="NearbyPlaces.loadAll(userLat||12.9716,userLng||77.5946)" id="refresh-nearby-btn">🔄 Refresh</button>
+            </div>
           </div>
           <div class="map-container"><div id="map"></div></div>
           <div id="map-status" class="text-xs text-muted mt-1">Getting your location...</div>
         </div>
 
-        <!-- Nearby Mechanics -->
+        <!-- Nearby Places Panel -->
+        <div class="card mb-3">
+          <div class="flex items-center justify-between mb-2">
+            <div class="card-title mb-0">🗺️ Nearby — Real-Time Places</div>
+            <div style="font-size:.75rem;color:#9AA5B4">Live data · OpenStreetMap</div>
+          </div>
+          <div id="nearby-list">
+            <div class="nearby-loading" style="text-align:center;padding:2rem;color:#9AA5B4;font-size:.875rem">
+              <div style="font-size:2rem;margin-bottom:.5rem">📡</div>
+              Allow location access to load real nearby places
+            </div>
+          </div>
+        </div>
+
+        <!-- Nearby Mechanics (our platform) -->
         <div class="card">
-          <div class="card-title">🔧 Nearby Mechanics</div>
+          <div class="card-title">🔧 RoadSide+ Mechanics Online Now</div>
           <div id="mechanics-list" style="display:flex;flex-direction:column;gap:0.75rem">
             <div class="text-muted text-sm">Detecting your location...</div>
           </div>
@@ -355,7 +370,38 @@
     </div>
   </div>
 </div>
-
+<!-- Notify Place Modal -->
+<div class="modal-overlay" id="notify-place-modal">
+  <div class="modal" style="max-width:400px">
+    <div style="text-align:center;margin-bottom:1.25rem">
+      <div id="npm-icon" style="font-size:3rem;margin-bottom:.5rem">⛽</div>
+      <h3 class="modal-title" style="margin:0" id="npm-name">Place Name</h3>
+      <div class="text-muted text-sm" id="npm-cat">Category</div>
+    </div>
+    <div style="background:#F8FAFC;border-radius:14px;padding:1rem;margin-bottom:1.25rem">
+      <div class="flex justify-between mb-1">
+        <span class="text-muted text-sm">Travel time</span>
+        <strong id="npm-eta" style="color:#FF6B35">—</strong>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-muted text-sm">Address</span>
+        <span class="text-sm" id="npm-addr" style="max-width:180px;text-align:right">—</span>
+      </div>
+    </div>
+    <p class="text-sm text-muted mb-2">What would you like to do?</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
+      <button onclick="NearbyPlaces.chooseSelf()"
+        style="padding:1rem;border-radius:14px;background:#EBF5FF;border:1.5px solid #BDD9F7;color:#1E3A5F;font-weight:700;font-size:.9rem;cursor:pointer;font-family:inherit">
+        🗺️ I'll Go There<br><span style="font-size:.72rem;font-weight:500;color:#5A6A7A">Open directions</span>
+      </button>
+      <button onclick="NearbyPlaces.notifyPlace(NearbyPlaces.selectedPlace)"
+        style="padding:1rem;border-radius:14px;background:linear-gradient(135deg,#FF6B35,#E55A26);border:none;color:#fff;font-weight:700;font-size:.9rem;cursor:pointer;font-family:inherit">
+        📞 Notify Them<br><span style="font-size:.72rem;font-weight:500;opacity:.85">Send my location</span>
+      </button>
+    </div>
+    <button onclick="closeModal('notify-place-modal')" class="btn btn-ghost w-full mt-2 btn-sm">Cancel</button>
+  </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -372,15 +418,14 @@
 </script>
 <script src="{{ url_for('static', filename='js/socket.js') }}"></script>
 <script src="{{ url_for('static', filename='js/maps.js') }}"></script>
+<script src="{{ url_for('static', filename='js/nearby.js') }}"></script>
 <script src="{{ url_for('static', filename='js/payment.js') }}"></script>
 <script src="{{ url_for('static', filename='js/ai-chat.js') }}"></script>
 <script src="{{ url_for('static', filename='js/user.js') }}"></script>
 <script>
-  // Auto-open service section if redirected from landing page
   if (PENDING_SERVICE) {
     setTimeout(() => { showSection('emergency'); selectService(PENDING_SERVICE); }, 400);
   }
-  // Init Leaflet map
   window.addEventListener('load', () => setTimeout(initMap, 100));
 </script>
 {% endblock %}

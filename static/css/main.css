@@ -376,3 +376,36 @@ tr:hover td{background:#FAFBFC}
   .chat-window{width:calc(100vw - 2rem)}
   .page-content{padding:1.25rem}
 }
+
+/* ── Nearby Places ── */
+.ntab {
+  padding:.4rem .85rem;border-radius:99px;border:1.5px solid #E5EAF0;
+  background:#F8FAFC;font-size:.78rem;font-weight:700;color:#5A6A7A;
+  cursor:pointer;font-family:inherit;transition:all .16s;display:inline-flex;align-items:center;gap:.35rem;
+}
+.ntab:hover { border-color:#FF6B35;color:#FF6B35;background:#FFF4F0 }
+.ntab.active { border-color:#FF6B35;background:linear-gradient(135deg,#FF6B35,#E55A26);color:#fff }
+.ntab-count {
+  min-width:18px;height:18px;border-radius:99px;
+  background:rgba(0,0,0,.1);font-size:.68rem;font-weight:800;
+  display:inline-flex;align-items:center;justify-content:center;padding:0 4px;
+}
+.ntab.active .ntab-count { background:rgba(255,255,255,.25) }
+
+.nearby-item:hover {
+  border-color:#FF6B35 !important;
+  box-shadow:0 6px 20px rgba(255,107,53,.1);
+  transform:translateY(-2px);
+}
+
+/* ── Spinner ── */
+@keyframes spin { to { transform:rotate(360deg) } }
+.spinner {
+  width:28px;height:28px;border:3px solid #E5EAF0;
+  border-top-color:#FF6B35;border-radius:50%;
+  animation:spin .8s linear infinite;margin:0 auto .75rem;
+}
+.nearby-loading { text-align:center;padding:2rem;color:#9AA5B4 }
+
+/* ── stat-icon red variant ── */
+.stat-icon.red { background:linear-gradient(135deg,#FFEBEE,#FFCDD2) }

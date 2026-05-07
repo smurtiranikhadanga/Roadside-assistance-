@@ -40,7 +40,7 @@ function initMap() {
       userMarker = L.marker([userLat, userLng], { icon: userIcon })
         .addTo(userMap).bindPopup('📍 You are here').openPopup();
 
-      // Reverse geocode with Nominatim (free)
+      // Reverse geocode
       fetch(`https://nominatim.openstreetmap.org/reverse?lat=${userLat}&lon=${userLng}&format=json`)
         .then(r => r.json()).then(data => {
           const addr = data.display_name || 'Your location';
@@ -50,11 +50,13 @@ function initMap() {
           const ls = document.getElementById('location-status');
           if (ls) ls.textContent = '📍 ' + addr.split(',').slice(0, 2).join(',');
           const ms = document.getElementById('map-status');
-          if (ms) ms.textContent = '📍 Location detected';
-        }).catch(() => {
-          const ms = document.getElementById('map-status');
-          if (ms) ms.textContent = '📍 Location detected (address lookup unavailable)';
-        });
+          if (ms) ms.textContent = '📍 Location detected — loading nearby places...';
+        }).catch(() => {});
+
+      // Load real nearby places from Overpass API
+      if (typeof NearbyPlaces !== 'undefined') {
+        NearbyPlaces.loadAll(userLat, userLng);
+      }
 
       loadNearbyMechanics();
     }, () => {
