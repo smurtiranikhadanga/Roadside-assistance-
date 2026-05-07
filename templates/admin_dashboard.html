@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+{% block title %}Admin Panel — RoadSide+{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <span class="logo-emoji">🛡️</span> Admin<span class="accent">+</span>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-label">Overview</div>
+      <a class="nav-item active" onclick="showAdminSection('adash')"><span class="nav-icon">📊</span> Dashboard</a>
+      <a class="nav-item" onclick="showAdminSection('ausers')"><span class="nav-icon">👥</span> Users</a>
+      <a class="nav-item" onclick="showAdminSection('amechanics')"><span class="nav-icon">🔧</span> Mechanics</a>
+      <a class="nav-item" onclick="showAdminSection('arequests')"><span class="nav-icon">📋</span> Requests</a>
+      <div class="nav-label">Analytics</div>
+      <a class="nav-item" onclick="showAdminSection('aanalytics')"><span class="nav-icon">📈</span> Analytics</a>
+      <a class="nav-item" onclick="showAdminSection('apayments')"><span class="nav-icon">💳</span> Payments</a>
+      <a class="nav-item danger" href="{{ url_for('auth.logout') }}"><span class="nav-icon">🚪</span> Logout</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-chip">
+        <img src="{{ current_user.avatar or 'https://ui-avatars.com/api/?name=Admin' }}" alt="admin" />
+        <div class="user-chip-info">
+          <div class="user-chip-name">{{ current_user.name }}</div>
+          <div class="user-chip-role">Administrator</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="flex items-center gap-2">
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+        <span class="topbar-title" id="admin-page-title">Admin Dashboard</span>
+      </div>
+      <div class="topbar-actions">
+        <span class="badge badge-green">● Live</span>
+        <button class="btn btn-ghost btn-sm" onclick="refreshAdminData()">🔄 Refresh</button>
+      </div>
+    </header>
+
+    <div class="page-content">
+
+      <!-- DASHBOARD -->
+      <section id="section-adash">
+        <div class="stats-grid mb-3">
+          <div class="stat-card">
+            <div class="stat-icon blue">👥</div>
+            <div><div class="stat-value">{{ stats.total_users }}</div><div class="stat-label">Total Users</div></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon green">🔧</div>
+            <div><div class="stat-value">{{ stats.total_mechanics }}</div><div class="stat-label">Mechanics</div></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon red">🆘</div>
+            <div><div class="stat-value" id="active-req-count">{{ stats.active_requests }}</div><div class="stat-label">Active Requests</div></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon yellow">💰</div>
+            <div><div class="stat-value">₹{{ "%.0f"|format(stats.total_revenue) }}</div><div class="stat-label">Total Revenue</div></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon green">📡</div>
+            <div><div class="stat-value">{{ stats.online_mechanics }}</div><div class="stat-label">Online Now</div></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon red">⏳</div>
+            <div><div class="stat-value">{{ stats.pending_approvals }}</div><div class="stat-label">Pending Approvals</div></div>
+          </div>
+        </div>
+
+        <!-- Revenue Chart -->
+        <div class="grid-2 mb-3">
+          <div class="card">
+            <div class="card-title">📈 Revenue (Last 30 Days)</div>
+            <canvas id="admin-revenue-chart" height="160"></canvas>
+          </div>
+          <div class="card">
+            <div class="card-title">🥧 Requests by Service Type</div>
+            <canvas id="admin-service-chart" height="160"></canvas>
+          </div>
+        </div>
+
+        <!-- Recent Requests -->
+        <div class="card">
+          <div class="card-title">🕐 Recent Requests</div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>ID</th><th>Service</th><th>User</th><th>Status</th><th>Amount</th><th>Date</th></tr></thead>
+              <tbody>
+                {% for r in requests %}
+                <tr>
+                  <td>#{{ r.id }}</td>
+                  <td>{{ r.service_type.replace('_',' ').title() }}</td>
+                  <td>{{ r.requester.name if r.requester else '—' }}</td>
+                  <td>
+                    <span class="badge {{ 'badge-green' if r.status=='completed' else 'badge-blue' if r.status in ['accepted','traveling'] else 'badge-red' if r.status=='cancelled' else 'badge-yellow' }}">
+                      {{ r.status }}
+                    </span>
+                  </td>
+                  <td>₹{{ "%.0f"|format(r.total_amount) }}</td>
+                  <td class="text-muted text-xs">{{ r.requested_at.strftime('%d %b %H:%M') }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="6" class="text-muted">No requests yet</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- USERS -->
+      <section id="section-ausers" class="hidden">
+        <div class="mb-3"><h2 class="font-bold" style="font-size:1.5rem">👥 Manage Users</h2></div>
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Joined</th><th>Status</th><th>Action</th></tr></thead>
+              <tbody>
+                {% for u in users %}
+                <tr>
+                  <td><div class="flex items-center gap-1"><img src="{{ u.avatar or 'https://ui-avatars.com/api/?name=' + u.name }}" style="width:28px;height:28px;border-radius:50%" /> {{ u.name }}</div></td>
+                  <td class="text-muted text-sm">{{ u.email }}</td>
+                  <td><span class="badge {{ 'badge-blue' if u.role=='admin' else 'badge-green' if u.role=='mechanic' else 'badge-yellow' }}">{{ u.role }}</span></td>
+                  <td class="text-muted text-xs">{{ u.created_at.strftime('%d %b %Y') }}</td>
+                  <td><span class="badge {{ 'badge-green' if u.is_active else 'badge-red' }}">{{ 'Active' if u.is_active else 'Blocked' }}</span></td>
+                  <td>
+                    <button class="btn btn-ghost btn-sm" onclick="toggleBlockUser({{ u.id }}, this)">
+                      {{ '🔓 Unblock' if not u.is_active else '🔒 Block' }}
+                    </button>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- MECHANICS -->
+      <section id="section-amechanics" class="hidden">
+        <div class="mb-3"><h2 class="font-bold" style="font-size:1.5rem">🔧 Manage Mechanics</h2></div>
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Name</th><th>Rating</th><th>Jobs</th><th>Earnings</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody>
+                {% for m in mechanics %}
+                <tr>
+                  <td>{{ m.user.name if m.user else '—' }}</td>
+                  <td class="text-yellow">★ {{ m.rating }}</td>
+                  <td>{{ m.total_jobs }}</td>
+                  <td>₹{{ "%.0f"|format(m.total_earnings) }}</td>
+                  <td>
+                    {% if m.is_suspended %}<span class="badge badge-red">Suspended</span>
+                    {% elif not m.is_approved %}<span class="badge badge-yellow">Pending</span>
+                    {% elif m.is_online %}<span class="badge badge-green">Online</span>
+                    {% else %}<span class="badge badge-yellow">Offline</span>{% endif %}
+                  </td>
+                  <td class="flex gap-1">
+                    {% if not m.is_approved %}
+                    <button class="btn btn-success btn-sm" onclick="approveMechanic({{ m.id }}, this)">✅ Approve</button>
+                    {% endif %}
+                    <button class="btn btn-ghost btn-sm" onclick="suspendMechanic({{ m.id }}, this)">
+                      {{ '🔓 Unsuspend' if m.is_suspended else '🚫 Suspend' }}
+                    </button>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ANALYTICS -->
+      <section id="section-aanalytics" class="hidden">
+        <div class="mb-3"><h2 class="font-bold" style="font-size:1.5rem">📈 Analytics</h2></div>
+        <div class="grid-2 mb-3">
+          <div class="card">
+            <div class="card-title">Peak Request Hours</div>
+            <canvas id="peak-hours-chart" height="180"></canvas>
+          </div>
+          <div class="card">
+            <div class="card-title">Revenue Growth</div>
+            <canvas id="revenue-growth-chart" height="180"></canvas>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title">Most Common Issues</div>
+            <canvas id="issues-chart" height="180"></canvas>
+          </div>
+          <div class="card">
+            <div class="card-title">Mechanic Performance</div>
+            <canvas id="mechanic-perf-chart" height="180"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- PAYMENTS -->
+      <section id="section-apayments" class="hidden">
+        <div class="mb-3"><h2 class="font-bold" style="font-size:1.5rem">💳 Payment Monitoring</h2></div>
+        <div class="stats-grid mb-3">
+          <div class="stat-card"><div class="stat-icon green">✅</div><div><div class="stat-value" id="ap-paid">—</div><div class="stat-label">Paid</div></div></div>
+          <div class="stat-card"><div class="stat-icon red">❌</div><div><div class="stat-value" id="ap-failed">—</div><div class="stat-label">Failed</div></div></div>
+          <div class="stat-card"><div class="stat-icon yellow">↩️</div><div><div class="stat-value" id="ap-refunded">—</div><div class="stat-label">Refunded</div></div></div>
+        </div>
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Order ID</th><th>User</th><th>Amount</th><th>Method</th><th>Status</th><th>Date</th></tr></thead>
+              <tbody id="admin-payments-body"><tr><td colspan="6" class="text-muted">Loading...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- REQUESTS -->
+      <section id="section-arequests" class="hidden">
+        <div class="mb-3"><h2 class="font-bold" style="font-size:1.5rem">📋 All Requests</h2></div>
+        <div class="card">
+          <div class="flex gap-1 mb-2">
+            <select class="form-control" id="req-filter" onchange="filterAdminRequests()" style="max-width:200px">
+              <option value="">All Statuses</option>
+              <option value="pending">Pending</option>
+              <option value="accepted">Accepted</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>ID</th><th>Service</th><th>User</th><th>Mechanic</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead>
+              <tbody>
+                {% for r in requests %}
+                <tr class="req-row" data-status="{{ r.status }}">
+                  <td>#{{ r.id }}</td>
+                  <td>{{ r.service_type.replace('_',' ').title() }}</td>
+                  <td>{{ r.requester.name if r.requester else '—' }}</td>
+                  <td>{{ r.mechanic.user.name if r.mechanic and r.mechanic.user else '—' }}</td>
+                  <td>₹{{ "%.0f"|format(r.total_amount) }}</td>
+                  <td><span class="badge {{ 'badge-green' if r.status=='completed' else 'badge-blue' if r.status in ['accepted','traveling'] else 'badge-red' if r.status=='cancelled' else 'badge-yellow' }}">{{ r.status }}</span></td>
+                  <td class="text-muted text-xs">{{ r.requested_at.strftime('%d %b %H:%M') }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/socket.js') }}"></script>
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+<script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+{% endblock %}

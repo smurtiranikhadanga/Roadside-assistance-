@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+{% block title %}Mechanic Dashboard — RoadSide+{% endblock %}
+{% block extra_css %}
+<script src="https://maps.googleapis.com/maps/api/js?key={{ maps_key }}&callback=initMechanicMap" async defer></script>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <span class="logo-emoji">🔧</span> Mechanic<span class="accent">+</span>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-label">Dashboard</div>
+      <a class="nav-item active" onclick="showSection('mhome')"><span class="nav-icon">🏠</span> Dashboard</a>
+      <a class="nav-item" onclick="showSection('mjobs')"><span class="nav-icon">📋</span> Requests</a>
+      <a class="nav-item" onclick="showSection('mearnings')"><span class="nav-icon">💰</span> Earnings</a>
+      <a class="nav-item" onclick="showSection('mreviews')"><span class="nav-icon">⭐</span> Reviews</a>
+      <a class="nav-item danger" href="{{ url_for('auth.logout') }}"><span class="nav-icon">🚪</span> Logout</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-chip">
+        <img src="{{ current_user.avatar or 'https://ui-avatars.com/api/?name=' + current_user.name }}" alt="avatar" />
+        <div class="user-chip-info">
+          <div class="user-chip-name">{{ current_user.name }}</div>
+          <div class="user-chip-role" id="online-status-text">Offline</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="flex items-center gap-2">
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+        <span class="topbar-title" id="page-title">Mechanic Dashboard</span>
+      </div>
+      <div class="topbar-actions">
+        <!-- Online/Offline Toggle -->
+        <div class="toggle-wrap">
+          <span class="toggle-label text-sm">Online</span>
+          <button class="toggle" id="online-toggle" onclick="toggleOnlineStatus()"></button>
+        </div>
+      </div>
+    </header>
+
+    <div class="page-content">
+
+      <!-- HOME -->
+      <section id="section-mhome">
+        <div class="stats-grid mb-3">
+          <div class="stat-card">
+            <div class="stat-icon blue">📋</div>
+            <div><div class="stat-value" id="m-total-jobs">—</div><div class="stat-label">Total Jobs</div></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon green">💰</div>
+            <div><div class="stat-value" id="m-total-earnings">—</div><div class="stat-label">Total Earnings</div></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon yellow">⭐</div>
+            <div><div class="stat-value" id="m-rating">—</div><div class="stat-label">Rating</div></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon red">📅</div>
+            <div><div class="stat-value" id="m-today-earnings">—</div><div class="stat-label">Today</div></div>
+          </div>
+        </div>
+
+        <!-- Active Job Card -->
+        <div class="card mb-3" id="active-job-card" style="display:none">
+          <div class="flex items-center justify-between mb-2">
+            <div class="card-title mb-0">🔧 Active Job</div>
+            <span class="badge badge-blue" id="active-job-status">Accepted</span>
+          </div>
+          <div id="active-job-info" class="mb-2"></div>
+          <div class="map-container mb-2"><div id="mechanic-map"></div></div>
+          <div class="flex gap-1">
+            <button class="btn btn-primary btn-sm" onclick="updateJobStatus('traveling')">🚗 Start Journey</button>
+            <button class="btn btn-success btn-sm" onclick="updateJobStatus('reached')">📍 Reached</button>
+            <button class="btn btn-ghost btn-sm" onclick="updateJobStatus('in_progress')">🔧 In Progress</button>
+            <button class="btn btn-success btn-sm" onclick="updateJobStatus('completed')">✅ Complete</button>
+          </div>
+        </div>
+
+        <!-- Incoming Requests -->
+        <div class="card mb-3">
+          <div class="card-title">📥 Incoming Requests</div>
+          <div id="incoming-requests">
+            <div class="text-muted text-sm">Go online to receive requests.</div>
+          </div>
+        </div>
+
+        <!-- Navigation Map -->
+        <div class="card">
+          <div class="card-title">🗺️ Your Location</div>
+          <div class="map-container"><div id="mechanic-location-map"></div></div>
+        </div>
+      </section>
+
+      <!-- EARNINGS -->
+      <section id="section-mearnings" class="hidden">
+        <div class="mb-3"><h2 class="font-bold" style="font-size:1.5rem">💰 Earnings</h2></div>
+        <div class="earnings-grid mb-3">
+          <div class="earning-card">
+            <div class="earning-label">Today</div>
+            <div class="earning-amount" id="earn-today">₹—</div>
+          </div>
+          <div class="earning-card">
+            <div class="earning-label">This Week</div>
+            <div class="earning-amount" id="earn-week">₹—</div>
+          </div>
+          <div class="earning-card">
+            <div class="earning-label">This Month</div>
+            <div class="earning-amount" id="earn-month">₹—</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Revenue Chart</div>
+          <canvas id="earnings-chart" height="100"></canvas>
+        </div>
+      </section>
+
+      <!-- JOBS -->
+      <section id="section-mjobs" class="hidden">
+        <div class="mb-3"><h2 class="font-bold" style="font-size:1.5rem">📋 Job History</h2></div>
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Date</th><th>Service</th><th>Customer</th><th>Amount</th><th>Status</th></tr></thead>
+              <tbody id="mechanic-jobs-body"><tr><td colspan="5" class="text-muted">Loading...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- REVIEWS -->
+      <section id="section-mreviews" class="hidden">
+        <div class="mb-3"><h2 class="font-bold" style="font-size:1.5rem">⭐ Customer Reviews</h2></div>
+        <div class="card mb-3">
+          <div class="flex items-center gap-2 mb-2">
+            <div style="font-size:3rem;font-weight:800;color:var(--yellow)" id="avg-rating-display">—</div>
+            <div>
+              <div class="rating-stars" id="avg-stars">★★★★★</div>
+              <div class="text-muted text-sm" id="total-reviews-display">— reviews</div>
+            </div>
+          </div>
+        </div>
+        <div id="reviews-list" style="display:flex;flex-direction:column;gap:1rem"></div>
+      </section>
+
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const MECHANIC_USER_ID = {{ current_user.id }};
+  {% if active_request %}
+  const ACTIVE_REQUEST = {{ active_request.to_dict()|tojson }};
+  {% else %}
+  const ACTIVE_REQUEST = null;
+  {% endif %}
+</script>
+<script src="{{ url_for('static', filename='js/socket.js') }}"></script>
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+<script src="{{ url_for('static', filename='js/mechanic.js') }}"></script>
+{% endblock %}

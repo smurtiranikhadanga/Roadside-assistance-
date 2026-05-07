@@ -1,0 +1,376 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — RoadSide+{% endblock %}
+{% block extra_css %}
+<script src="https://maps.googleapis.com/maps/api/js?key={{ maps_key }}&libraries=places&callback=initMap" async defer></script>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <span class="logo-emoji">🚗</span>
+      RoadSide<span class="accent">+</span>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-label">Main</div>
+      <a class="nav-item active" data-section="home" onclick="showSection('home')">
+        <span class="nav-icon">🏠</span> Home
+      </a>
+      <a class="nav-item" data-section="emergency" onclick="showSection('emergency')">
+        <span class="nav-icon">🆘</span> Emergency Help
+      </a>
+      <a class="nav-item" data-section="tracking" onclick="showSection('tracking')">
+        <span class="nav-icon">📡</span> My Requests
+      </a>
+      <a class="nav-item" data-section="payments" onclick="showSection('payments')">
+        <span class="nav-icon">💳</span> Payments
+      </a>
+      <div class="nav-label">Account</div>
+      <a class="nav-item" data-section="history" onclick="showSection('history')">
+        <span class="nav-icon">📋</span> History
+      </a>
+      <a class="nav-item" data-section="profile" onclick="showSection('profile')">
+        <span class="nav-icon">👤</span> Profile
+      </a>
+      <a class="nav-item danger" href="{{ url_for('auth.logout') }}">
+        <span class="nav-icon">🚪</span> Logout
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-chip">
+        <img src="{{ current_user.avatar or 'https://ui-avatars.com/api/?name=' + current_user.name }}" alt="avatar" />
+        <div class="user-chip-info">
+          <div class="user-chip-name">{{ current_user.name }}</div>
+          <div class="user-chip-role">{{ current_user.role }}</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main-content">
+    <header class="topbar">
+      <div class="flex items-center gap-2">
+        <button class="btn btn-ghost btn-sm" id="sidebar-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+        <span class="topbar-title" id="page-title">Dashboard</span>
+      </div>
+      <div class="topbar-actions">
+        <button class="notif-btn" onclick="loadNotifications()" title="Notifications">
+          🔔<span class="notif-badge hidden" id="notif-count">0</span>
+        </button>
+        <span class="text-sm text-muted" id="location-status">📍 Detecting...</span>
+      </div>
+    </header>
+
+    <div class="page-content">
+
+      <!-- HOME SECTION -->
+      <section id="section-home">
+        <div class="mb-3">
+          <h2 class="font-bold" style="font-size:1.5rem">
+            Good <span id="greeting-time">day</span>, {{ current_user.name.split()[0] }}! 👋
+          </h2>
+          <p class="text-muted text-sm">How can we assist you today?</p>
+        </div>
+
+        <div class="stats-grid mb-3">
+          <div class="stat-card">
+            <div class="stat-icon blue">🔧</div>
+            <div><div class="stat-value" id="stat-total-requests">—</div><div class="stat-label">Total Requests</div></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon green">✅</div>
+            <div><div class="stat-value" id="stat-completed">—</div><div class="stat-label">Completed</div></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon yellow">⭐</div>
+            <div><div class="stat-value" id="stat-avg-rating">—</div><div class="stat-label">Avg Rating Given</div></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon red">💰</div>
+            <div><div class="stat-value" id="stat-spent">—</div><div class="stat-label">Total Spent</div></div>
+          </div>
+        </div>
+
+        <!-- Map -->
+        <div class="card mb-3">
+          <div class="flex items-center justify-between mb-2">
+            <div class="card-title mb-1">📍 Live Map — Nearby Mechanics</div>
+            <button class="btn btn-ghost btn-sm" onclick="refreshNearbyMechanics()">🔄 Refresh</button>
+          </div>
+          <div class="map-container"><div id="map"></div></div>
+          <div id="map-status" class="text-xs text-muted mt-1">Getting your location...</div>
+        </div>
+
+        <!-- Nearby Mechanics -->
+        <div class="card">
+          <div class="card-title">🔧 Nearby Mechanics</div>
+          <div id="mechanics-list" style="display:flex;flex-direction:column;gap:0.75rem">
+            <div class="text-muted text-sm">Detecting your location...</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- EMERGENCY SECTION -->
+      <section id="section-emergency" class="hidden">
+        <div class="mb-3">
+          <h2 class="font-bold" style="font-size:1.5rem">🆘 Emergency Assistance</h2>
+          <p class="text-muted text-sm">Select your issue — we'll dispatch the nearest mechanic instantly.</p>
+        </div>
+
+        <div class="service-grid mb-3" id="service-grid">
+          <div class="service-card" onclick="selectService('flat_tire')" data-type="flat_tire">
+            <span class="service-emoji">🔴</span>
+            <div class="service-name">Flat Tyre</div>
+            <div class="service-price">From ₹300</div>
+          </div>
+          <div class="service-card" onclick="selectService('battery')" data-type="battery">
+            <span class="service-emoji">🔋</span>
+            <div class="service-name">Battery Jump</div>
+            <div class="service-price">From ₹500</div>
+          </div>
+          <div class="service-card" onclick="selectService('fuel')" data-type="fuel">
+            <span class="service-emoji">⛽</span>
+            <div class="service-name">Fuel Delivery</div>
+            <div class="service-price">From ₹200</div>
+          </div>
+          <div class="service-card" onclick="selectService('engine')" data-type="engine">
+            <span class="service-emoji">⚙️</span>
+            <div class="service-name">Engine Issue</div>
+            <div class="service-price">From ₹800</div>
+          </div>
+          <div class="service-card" onclick="selectService('towing')" data-type="towing">
+            <span class="service-emoji">🚛</span>
+            <div class="service-name">Towing</div>
+            <div class="service-price">From ₹1200</div>
+          </div>
+          <div class="service-card" onclick="selectService('other')" data-type="other">
+            <span class="service-emoji">🛠️</span>
+            <div class="service-name">Other Issue</div>
+            <div class="service-price">From ₹400</div>
+          </div>
+        </div>
+
+        <div class="card mb-3" id="request-form-card" style="display:none">
+          <div class="card-title">📝 Request Details</div>
+          <div class="form-group">
+            <label class="form-label">📍 Your Location</label>
+            <input class="form-control" id="req-address" placeholder="Detecting your address..." readonly />
+          </div>
+          <div class="form-group">
+            <label class="form-label">📝 Describe the issue (optional)</label>
+            <textarea class="form-control" id="req-description" placeholder="e.g. Front left tyre puncture on MG Road..."></textarea>
+          </div>
+          <div class="card mb-2" style="background:rgba(26,115,232,0.08);border-color:var(--blue)">
+            <div class="text-sm font-bold mb-1">💡 AI Estimate</div>
+            <div id="ai-eta-info" class="text-sm text-muted">Select a service to get AI ETA prediction...</div>
+          </div>
+          <button class="btn btn-danger btn-lg w-full" onclick="submitRequest()" id="submit-req-btn">
+            🆘 Request Assistance Now
+          </button>
+        </div>
+      </section>
+
+      <!-- TRACKING SECTION -->
+      <section id="section-tracking" class="hidden">
+        <div class="mb-3">
+          <h2 class="font-bold" style="font-size:1.5rem">📡 Request Tracking</h2>
+        </div>
+        <div id="no-active-request" class="card text-muted text-sm" style="text-align:center;padding:3rem">
+          No active requests. <a onclick="showSection('emergency')" style="color:var(--blue);cursor:pointer">Request assistance →</a>
+        </div>
+        <div id="active-request-card" class="hidden">
+          <div class="card mb-3">
+            <div class="flex items-center justify-between mb-2">
+              <div class="card-title mb-0">Live Status</div>
+              <span class="badge badge-blue" id="req-status-badge">Accepted</span>
+            </div>
+            <div class="status-timeline mb-2" id="status-timeline">
+              <div class="status-step"><div class="step-dot" id="dot-accepted">✓</div><div class="step-label">Accepted</div></div>
+              <div class="status-step"><div class="step-dot" id="dot-traveling">→</div><div class="step-label">Traveling</div></div>
+              <div class="status-step"><div class="step-dot" id="dot-reached">📍</div><div class="step-label">Reached</div></div>
+              <div class="status-step"><div class="step-dot" id="dot-in_progress">🔧</div><div class="step-label">In Progress</div></div>
+              <div class="status-step"><div class="step-dot" id="dot-completed">✅</div><div class="step-label">Done</div></div>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:25%"></div></div>
+            <div class="text-sm text-muted" id="eta-display">ETA: calculating...</div>
+          </div>
+          <div class="card mb-3" id="mechanic-info-card">
+            <div class="card-title">Your Mechanic</div>
+            <div class="mechanic-card" id="mechanic-detail"></div>
+          </div>
+          <div class="map-container mb-3"><div id="tracking-map"></div></div>
+          <!-- Chat -->
+          <div class="card">
+            <div class="card-title">💬 Chat with Mechanic</div>
+            <div id="chat-messages" style="height:200px;overflow-y:auto;display:flex;flex-direction:column;gap:0.5rem;padding:0.5rem;background:rgba(0,0,0,0.2);border-radius:var(--radius);margin-bottom:0.75rem"></div>
+            <div class="flex gap-1">
+              <input class="form-control" id="chat-input-field" placeholder="Type a message..." onkeydown="if(event.key==='Enter') sendChatMessage()" />
+              <button class="btn btn-primary" onclick="sendChatMessage()">Send</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PAYMENTS SECTION -->
+      <section id="section-payments" class="hidden">
+        <div class="mb-3">
+          <h2 class="font-bold" style="font-size:1.5rem">💳 Payments</h2>
+        </div>
+        <div id="payment-pending-card" class="card mb-3 hidden">
+          <div class="card-title">Payment Due</div>
+          <div id="payment-breakdown"></div>
+          <button class="btn btn-primary btn-lg w-full mt-2" onclick="initiatePayment()">Pay with Razorpay</button>
+        </div>
+        <div class="card">
+          <div class="card-title">Payment History</div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Date</th><th>Service</th><th>Amount</th><th>Method</th><th>Status</th></tr></thead>
+              <tbody id="payment-history-body"><tr><td colspan="5" class="text-muted">Loading...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- HISTORY SECTION -->
+      <section id="section-history" class="hidden">
+        <div class="mb-3">
+          <h2 class="font-bold" style="font-size:1.5rem">📋 Request History</h2>
+        </div>
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Date</th><th>Issue</th><th>Mechanic</th><th>Amount</th><th>Status</th><th>Action</th></tr></thead>
+              <tbody id="history-body"><tr><td colspan="6" class="text-muted">Loading...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- PROFILE SECTION -->
+      <section id="section-profile" class="hidden">
+        <div class="mb-3">
+          <h2 class="font-bold" style="font-size:1.5rem">👤 My Profile</h2>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title">Personal Info</div>
+            <div style="text-align:center;margin-bottom:1.5rem">
+              <img src="{{ current_user.avatar or 'https://ui-avatars.com/api/?name=' + current_user.name + '&size=100' }}"
+                   style="width:80px;height:80px;border-radius:50%;border:3px solid var(--blue);margin-bottom:0.75rem" />
+              <div class="font-bold">{{ current_user.name }}</div>
+              <div class="text-muted text-sm">{{ current_user.email }}</div>
+            </div>
+            <form method="POST" action="{{ url_for('user.profile') }}">
+              <div class="form-group">
+                <label class="form-label">Phone</label>
+                <input class="form-control" name="phone" value="{{ current_user.phone or '' }}" placeholder="+91 XXXXX XXXXX" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Emergency Contact</label>
+                <input class="form-control" name="emergency_contact" value="{{ current_user.emergency_contact or '' }}" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Saved Address</label>
+                <input class="form-control" name="saved_address" value="{{ current_user.saved_address or '' }}" />
+              </div>
+              <button type="submit" class="btn btn-primary w-full">Save Changes</button>
+            </form>
+          </div>
+          <div class="card">
+            <div class="card-title">🚗 Vehicle Details</div>
+            <form method="POST" action="{{ url_for('user.profile') }}">
+              <div class="form-group">
+                <label class="form-label">Make</label>
+                <input class="form-control" name="vehicle_make" value="{{ current_user.vehicle_make or '' }}" placeholder="e.g. Maruti" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Model</label>
+                <input class="form-control" name="vehicle_model" value="{{ current_user.vehicle_model or '' }}" placeholder="e.g. Swift" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Year</label>
+                <input class="form-control" name="vehicle_year" type="number" value="{{ current_user.vehicle_year or '' }}" placeholder="2022" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">License Plate</label>
+                <input class="form-control" name="license_plate" value="{{ current_user.license_plate or '' }}" placeholder="KA-01-XX-1234" />
+              </div>
+              <button type="submit" class="btn btn-primary w-full">Save Vehicle</button>
+            </form>
+          </div>
+        </div>
+      </section>
+
+    </div><!-- /page-content -->
+  </div><!-- /main-content -->
+</div><!-- /dashboard -->
+
+<!-- SOS Button -->
+<button class="sos-btn" onclick="triggerSOS()" title="Emergency SOS">
+  <span class="sos-icon">🚨</span>SOS
+</button>
+
+<!-- AI Chat Widget -->
+<div class="chat-widget">
+  <div class="chat-window" id="chat-window">
+    <div class="chat-header">
+      <div class="chat-header-avatar">🤖</div>
+      <div class="chat-header-info">
+        <h4>RoadBot AI</h4>
+        <p>Your 24/7 roadside assistant</p>
+      </div>
+    </div>
+    <div class="chat-messages" id="ai-chat-messages">
+      <div class="chat-msg bot">Hi! I'm RoadBot 🤖 Describe your vehicle issue and I'll help diagnose it and guide you to safety!</div>
+    </div>
+    <div class="chat-input-wrap">
+      <input class="chat-input" id="ai-chat-input" placeholder="Ask me anything..." onkeydown="if(event.key==='Enter') sendAIMessage()" />
+      <button class="chat-send-btn" onclick="sendAIMessage()">➤</button>
+    </div>
+  </div>
+  <button class="chat-toggle-btn" onclick="document.getElementById('chat-window').classList.toggle('open')">🤖</button>
+</div>
+
+<!-- Review Modal -->
+<div class="modal-overlay" id="review-modal">
+  <div class="modal">
+    <div class="modal-title">⭐ Rate Your Experience</div>
+    <p class="text-muted text-sm mb-2">How was your service?</p>
+    <div class="stars mb-2" id="star-rating">
+      <span class="star" data-v="1" onclick="setRating(1)">★</span>
+      <span class="star" data-v="2" onclick="setRating(2)">★</span>
+      <span class="star" data-v="3" onclick="setRating(3)">★</span>
+      <span class="star" data-v="4" onclick="setRating(4)">★</span>
+      <span class="star" data-v="5" onclick="setRating(5)">★</span>
+    </div>
+    <textarea class="form-control mb-2" id="review-comment" placeholder="Write a review..."></textarea>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('review-modal')">Skip</button>
+      <button class="btn btn-primary" onclick="submitReview()">Submit Review</button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const USER_ID    = {{ current_user.id }};
+  const USER_NAME  = "{{ current_user.name }}";
+  const RZP_KEY    = "{{ razorpay_key }}";
+  let selectedService = null;
+  let currentRequestId = null;
+  let userLat = null, userLng = null;
+  let reviewRequestId = null;
+  let selectedRating = 0;
+</script>
+<script src="{{ url_for('static', filename='js/socket.js') }}"></script>
+<script src="{{ url_for('static', filename='js/maps.js') }}"></script>
+<script src="{{ url_for('static', filename='js/payment.js') }}"></script>
+<script src="{{ url_for('static', filename='js/ai-chat.js') }}"></script>
+<script src="{{ url_for('static', filename='js/user.js') }}"></script>
+{% endblock %}
