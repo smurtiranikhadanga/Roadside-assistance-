@@ -1,43 +1,112 @@
 {% extends "base.html" %}
 {% block title %}Sign In — RoadSide+{% endblock %}
+{% block extra_css %}
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+.auth-page{display:flex;min-height:100vh;background:#F0F4F8;font-family:'Plus Jakarta Sans',sans-serif}
+
+/* Left panel */
+.auth-left{
+  flex:1;background:linear-gradient(145deg,#1E3A5F 0%,#2D5F8A 55%,#1E3A5F 100%);
+  padding:3rem;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden;
+}
+.auth-left::before{content:'';position:absolute;width:500px;height:500px;border-radius:50%;background:rgba(255,107,53,.12);top:-150px;right:-150px;animation:blob 10s ease-in-out infinite}
+.auth-left::after{content:'';position:absolute;width:350px;height:350px;border-radius:50%;background:rgba(0,184,148,.08);bottom:-100px;left:-100px;animation:blob 13s ease-in-out infinite reverse}
+@keyframes blob{0%,100%{transform:scale(1)}50%{transform:scale(1.08) translate(15px,-15px)}}
+.auth-brand{display:flex;align-items:center;gap:.75rem;margin-bottom:3rem;position:relative;z-index:1}
+.auth-brand .mark{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#FF6B35,#E55A26);display:flex;align-items:center;justify-content:center;font-size:1.3rem;box-shadow:0 6px 20px rgba(255,107,53,.4)}
+.auth-brand .name{font-size:1.4rem;font-weight:800;color:#fff}.auth-brand .name span{color:#FF8C5A}
+.auth-hero{position:relative;z-index:1;margin-bottom:2.5rem}
+.auth-hero h1{font-size:2.6rem;font-weight:800;color:#fff;line-height:1.15;margin-bottom:1rem}
+.auth-hero h1 span{color:#FF8C5A}
+.auth-hero p{color:rgba(255,255,255,.65);font-size:1rem;line-height:1.65;max-width:380px}
+.auth-stats{display:flex;align-items:center;gap:1.5rem;margin-bottom:2rem;position:relative;z-index:1}
+.as{text-align:center}.as-v{font-size:1.5rem;font-weight:800;color:#fff}.as-l{font-size:.72rem;color:rgba(255,255,255,.45);font-weight:500}
+.as-div{width:1px;height:36px;background:rgba(255,255,255,.2)}
+.auth-features{display:flex;flex-direction:column;gap:.7rem;position:relative;z-index:1}
+.auth-features li{display:flex;align-items:center;gap:.7rem;color:rgba(255,255,255,.7);font-size:.875rem;list-style:none}
+
+/* Right panel */
+.auth-right{width:500px;display:flex;align-items:center;justify-content:center;padding:2rem;background:#F0F4F8}
+.auth-card{background:#fff;border-radius:24px;padding:2.5rem;width:100%;box-shadow:0 12px 48px rgba(0,0,0,.12);border:1px solid rgba(0,0,0,.06)}
+.auth-card-header{margin-bottom:1.75rem}
+.auth-card-header h2{font-size:1.6rem;font-weight:800;color:#1A2332;margin-bottom:.35rem}
+.auth-card-header p{color:#5A6A7A;font-size:.875rem}
+
+/* Google btn */
+.btn-google{display:flex;align-items:center;justify-content:center;gap:.75rem;width:100%;padding:.85rem;background:#fff;color:#333;font-weight:700;font-size:.9rem;border-radius:14px;text-decoration:none;border:1.5px solid #E2E8F0;box-shadow:0 2px 8px rgba(0,0,0,.06);transition:all .2s ease;font-family:inherit;cursor:pointer}
+.btn-google:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.12);border-color:#CBD5E0}
+
+/* Divider */
+.auth-divider{text-align:center;position:relative;margin:1.25rem 0;color:#9AA5B4;font-size:.8rem}
+.auth-divider::before,.auth-divider::after{content:'';position:absolute;top:50%;width:42%;height:1px;background:#E2E8F0}
+.auth-divider::before{left:0}.auth-divider::after{right:0}
+
+/* Form */
+.f-group{margin-bottom:1rem}
+.f-label{display:block;font-size:.8rem;font-weight:700;color:#5A6A7A;margin-bottom:.35rem}
+.f-input{width:100%;padding:.75rem 1rem;background:#F8FAFC;border:1.5px solid #E2E8F0;border-radius:12px;font-size:.9rem;font-family:inherit;color:#1A2332;transition:all .18s}
+.f-input:focus{outline:none;border-color:#FF6B35;background:#fff;box-shadow:0 0 0 3px rgba(255,107,53,.1)}
+.f-input::placeholder{color:#9AA5B4}
+.f-row{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+.f-select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239AA5B4' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 1rem center;padding-right:2.5rem}
+.f-hint{font-size:.72rem;color:#9AA5B4;margin-top:.3rem}
+
+/* Submit btn */
+.btn-submit{width:100%;padding:.9rem;border-radius:14px;background:linear-gradient(135deg,#FF6B35,#E55A26);color:#fff;font-weight:800;font-size:1rem;border:none;cursor:pointer;font-family:inherit;box-shadow:0 6px 18px rgba(255,107,53,.35);transition:all .2s;margin-top:.25rem}
+.btn-submit:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(255,107,53,.45)}
+
+/* Password toggle */
+.f-input-wrap{position:relative}
+.f-input-wrap .f-input{padding-right:3rem}
+.pw-toggle{position:absolute;right:.875rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#9AA5B4;font-size:1rem;padding:.25rem}
+
+.auth-switch{text-align:center;font-size:.82rem;color:#9AA5B4;margin-top:1.25rem}
+.auth-switch a{color:#FF6B35;font-weight:700;text-decoration:none}
+.auth-switch a:hover{text-decoration:underline}
+.terms{font-size:.72rem;color:#9AA5B4;text-align:center;margin-top:.75rem}
+.terms a{color:#FF6B35;text-decoration:none}
+
+@media(max-width:768px){.auth-left{display:none}.auth-right{width:100%;padding:1.25rem}.auth-card{padding:1.75rem}}
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="login-page">
-
+<div class="auth-page">
   <!-- Left panel -->
-  <div class="login-left">
-    <div class="login-brand">
-      <div class="brand-mark">🚗</div>
-      <div class="brand-name">RoadSide<span>+</span></div>
+  <div class="auth-left">
+    <div class="auth-brand">
+      <div class="mark">🚗</div>
+      <div class="name">RoadSide<span>+</span></div>
     </div>
-    <div class="login-hero">
-      <h1>Help is always<br><span class="hero-accent">one tap away.</span></h1>
-      <p>AI-powered roadside assistance that connects you with certified mechanics in minutes — not hours.</p>
+    <div class="auth-hero">
+      <h1>Stuck on the road?<br><span>Help in minutes.</span></h1>
+      <p>India's most trusted AI-powered roadside assistance. 850+ certified mechanics on standby 24/7.</p>
     </div>
-    <div class="login-stats">
-      <div class="ls"><div class="ls-value">12K+</div><div class="ls-label">Happy customers</div></div>
-      <div class="ls-div"></div>
-      <div class="ls"><div class="ls-value">850+</div><div class="ls-label">Expert mechanics</div></div>
-      <div class="ls-div"></div>
-      <div class="ls"><div class="ls-value">4.9★</div><div class="ls-label">App rating</div></div>
+    <div class="auth-stats">
+      <div class="as"><div class="as-v">12K+</div><div class="as-l">Customers helped</div></div>
+      <div class="as-div"></div>
+      <div class="as"><div class="as-v">5 min</div><div class="as-l">Avg response</div></div>
+      <div class="as-div"></div>
+      <div class="as"><div class="as-v">4.9★</div><div class="as-l">Rating</div></div>
     </div>
-    <div class="login-features">
-      <div class="lf-item"><span>⚡</span> Mechanic dispatched in under 5 mins</div>
-      <div class="lf-item"><span>📍</span> Live GPS tracking</div>
-      <div class="lf-item"><span>🔒</span> Secure Razorpay payments</div>
-      <div class="lf-item"><span>🤖</span> 24/7 AI assistant</div>
-    </div>
+    <ul class="auth-features">
+      <li>⚡ Mechanic dispatched in under 5 minutes</li>
+      <li>📍 Live GPS tracking of your mechanic</li>
+      <li>🤖 AI-guided emergency assistance</li>
+      <li>🔒 Secure Razorpay payments</li>
+    </ul>
   </div>
 
-  <!-- Right panel — sign in card -->
-  <div class="login-right">
-    <div class="login-card">
-      <div class="login-card-header">
+  <!-- Right panel -->
+  <div class="auth-right">
+    <div class="auth-card">
+      <div class="auth-card-header">
         <h2>Welcome back 👋</h2>
-        <p>Sign in to your RoadSide+ account</p>
+        <p>Sign in to access your RoadSide+ account</p>
       </div>
 
-      <!-- Google sign in -->
+      <!-- Google Sign-In -->
       <a href="{{ url_for('auth.google_login') }}" class="btn-google" id="google-signin-btn">
         <svg width="20" height="20" viewBox="0 0 24 24">
           <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -48,205 +117,46 @@
         Continue with Google
       </a>
 
-      <div class="divider"><span>or try a demo account</span></div>
+      <div class="auth-divider"><span>or sign in with email</span></div>
 
-      <div class="demo-grid">
-        <a href="{{ url_for('auth.demo_login', role='user') }}" class="demo-card user-demo" id="demo-user-btn">
-          <div class="demo-icon">👤</div>
-          <div class="demo-label">User</div>
-          <div class="demo-desc">Request service</div>
-        </a>
-        <a href="{{ url_for('auth.demo_login', role='mechanic') }}" class="demo-card mechanic-demo" id="demo-mechanic-btn">
-          <div class="demo-icon">🔧</div>
-          <div class="demo-label">Mechanic</div>
-          <div class="demo-desc">Manage jobs</div>
-        </a>
-        <a href="{{ url_for('auth.demo_login', role='admin') }}" class="demo-card admin-demo" id="demo-admin-btn">
-          <div class="demo-icon">🛡️</div>
-          <div class="demo-label">Admin</div>
-          <div class="demo-desc">Full control</div>
-        </a>
-      </div>
+      <!-- Email/Password Form -->
+      <form method="POST" action="{{ url_for('auth.login_post') }}" id="login-form">
+        <div class="f-group">
+          <label class="f-label" for="email">Email Address</label>
+          <input class="f-input" type="email" id="email" name="email" placeholder="you@example.com" required autocomplete="email"/>
+        </div>
+        <div class="f-group">
+          <label class="f-label" for="password">Password</label>
+          <div class="f-input-wrap">
+            <input class="f-input" type="password" id="password" name="password" placeholder="Your password" required autocomplete="current-password"/>
+            <button type="button" class="pw-toggle" onclick="togglePw('password', this)" title="Show/hide password">👁</button>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
+          <label style="display:flex;align-items:center;gap:.5rem;font-size:.82rem;color:#5A6A7A;cursor:pointer">
+            <input type="checkbox" name="remember" style="accent-color:#FF6B35"/> Remember me
+          </label>
+          <a href="#" style="font-size:.82rem;color:#FF6B35;text-decoration:none;font-weight:600">Forgot password?</a>
+        </div>
+        <button type="submit" class="btn-submit" id="login-btn">Sign In →</button>
+      </form>
 
-      <p class="terms-text">By continuing, you agree to our <a href="#">Terms</a> & <a href="#">Privacy Policy</a></p>
+      <div class="auth-switch">Don't have an account? <a href="{{ url_for('auth.register') }}">Create one free</a></div>
+      <div class="terms">By signing in you agree to our <a href="#">Terms</a> & <a href="#">Privacy Policy</a></div>
     </div>
   </div>
 </div>
 
-<style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Plus Jakarta Sans', sans-serif; }
-
-.login-page {
-  display: flex;
-  min-height: 100vh;
-  background: #F0F4F8;
+<script>
+function togglePw(id, btn) {
+  const el = document.getElementById(id);
+  el.type = el.type === 'password' ? 'text' : 'password';
+  btn.textContent = el.type === 'password' ? '👁' : '🙈';
 }
-
-/* Left */
-.login-left {
-  flex: 1;
-  background: linear-gradient(145deg, #1E3A5F 0%, #2D5F8A 60%, #1E3A5F 100%);
-  padding: 3rem;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  position: relative;
-  overflow: hidden;
-}
-.login-left::before {
-  content: '';
-  position: absolute;
-  width: 500px; height: 500px;
-  border-radius: 50%;
-  background: rgba(255,107,53,.12);
-  top: -150px; right: -150px;
-  animation: bgFloat 8s ease-in-out infinite;
-}
-.login-left::after {
-  content: '';
-  position: absolute;
-  width: 350px; height: 350px;
-  border-radius: 50%;
-  background: rgba(0,184,148,.08);
-  bottom: -100px; left: -100px;
-  animation: bgFloat 10s ease-in-out infinite reverse;
-}
-@keyframes bgFloat {
-  0%,100% { transform: scale(1) translateY(0); }
-  50%      { transform: scale(1.05) translateY(-20px); }
-}
-
-.login-brand {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 3.5rem;
-  position: relative;
-  z-index: 1;
-}
-.brand-mark {
-  width: 44px; height: 44px;
-  background: linear-gradient(135deg, #FF6B35, #E55A26);
-  border-radius: 12px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 1.3rem;
-  box-shadow: 0 6px 20px rgba(255,107,53,.4);
-}
-.brand-name { font-size: 1.4rem; font-weight: 800; color: #fff; }
-.brand-name span { color: #FF8C5A; }
-
-.login-hero { position: relative; z-index: 1; margin-bottom: 2.5rem; }
-.login-hero h1 { font-size: 2.8rem; font-weight: 800; color: #fff; line-height: 1.15; margin-bottom: 1rem; }
-.hero-accent { color: #FF8C5A; }
-.login-hero p { color: rgba(255,255,255,.65); font-size: 1.05rem; line-height: 1.65; max-width: 380px; }
-
-.login-stats {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  margin-bottom: 2rem;
-  position: relative; z-index: 1;
-}
-.ls-value { font-size: 1.5rem; font-weight: 800; color: #fff; }
-.ls-label { font-size: .75rem; color: rgba(255,255,255,.5); font-weight: 500; }
-.ls-div { width: 1px; height: 36px; background: rgba(255,255,255,.2); }
-
-.login-features { display: flex; flex-direction: column; gap: .75rem; position: relative; z-index: 1; }
-.lf-item {
-  display: flex; align-items: center; gap: .75rem;
-  color: rgba(255,255,255,.7); font-size: .9rem;
-}
-.lf-item span { font-size: 1.1rem; }
-
-/* Right */
-.login-right {
-  width: 480px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem;
-  background: #F0F4F8;
-}
-.login-card {
-  background: #fff;
-  border-radius: 24px;
-  padding: 2.5rem;
-  width: 100%;
-  box-shadow: 0 12px 48px rgba(0,0,0,.12);
-  border: 1px solid rgba(0,0,0,.06);
-}
-.login-card-header { margin-bottom: 2rem; }
-.login-card-header h2 { font-size: 1.6rem; font-weight: 800; color: #1A2332; margin-bottom: .4rem; }
-.login-card-header p { color: #5A6A7A; font-size: .9rem; }
-
-.btn-google {
-  display: flex; align-items: center; justify-content: center; gap: .75rem;
-  width: 100%; padding: .875rem;
-  background: #fff; color: #333;
-  font-weight: 700; font-size: .95rem;
-  border-radius: 14px; text-decoration: none;
-  border: 1.5px solid #E2E8F0;
-  box-shadow: 0 2px 8px rgba(0,0,0,.06);
-  transition: all .2s ease;
-  font-family: 'Plus Jakarta Sans', sans-serif;
-}
-.btn-google:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0,0,0,.12);
-  border-color: #CBD5E0;
-}
-
-.divider {
-  text-align: center; position: relative;
-  margin: 1.5rem 0; color: #9AA5B4; font-size: .82rem;
-}
-.divider::before,.divider::after {
-  content: ''; position: absolute; top: 50%;
-  width: 35%; height: 1px; background: #E2E8F0;
-}
-.divider::before { left: 0; }
-.divider::after { right: 0; }
-
-.demo-grid {
-  display: grid;
-  grid-template-columns: repeat(3,1fr);
-  gap: .75rem;
-  margin-bottom: 1.25rem;
-}
-.demo-card {
-  display: flex; flex-direction: column; align-items: center;
-  padding: 1.1rem .5rem; border-radius: 16px;
-  text-decoration: none; border: 2px solid transparent;
-  transition: all .22s ease; cursor: pointer;
-}
-.demo-card:hover { transform: translateY(-4px); }
-.demo-icon { font-size: 2rem; margin-bottom: .4rem; }
-.demo-label { font-size: .82rem; font-weight: 700; margin-bottom: .1rem; }
-.demo-desc { font-size: .7rem; }
-
-.user-demo     { background: #EBF5FF; border-color: #BDD9F7; }
-.user-demo     .demo-label { color: #1A5276; }
-.user-demo     .demo-desc  { color: #5B8DB8; }
-.user-demo:hover { border-color: #4A90D9; box-shadow: 0 8px 20px rgba(74,144,217,.2); }
-
-.mechanic-demo { background: #E8FBF7; border-color: #A3E9D8; }
-.mechanic-demo .demo-label { color: #00574A; }
-.mechanic-demo .demo-desc  { color: #3A9E88; }
-.mechanic-demo:hover { border-color: #00B894; box-shadow: 0 8px 20px rgba(0,184,148,.2); }
-
-.admin-demo    { background: #F0EDFF; border-color: #C5BDF8; }
-.admin-demo    .demo-label { color: #3D2E9E; }
-.admin-demo    .demo-desc  { color: #7B6ED0; }
-.admin-demo:hover { border-color: #6C5CE7; box-shadow: 0 8px 20px rgba(108,92,231,.2); }
-
-.terms-text { text-align: center; font-size: .76rem; color: #9AA5B4; }
-.terms-text a { color: #FF6B35; text-decoration: none; font-weight: 600; }
-
-@media (max-width: 768px) {
-  .login-left { display: none; }
-  .login-right { width: 100%; padding: 1.25rem; }
-  .login-card { padding: 1.75rem; }
-}
-</style>
+document.getElementById('login-form').addEventListener('submit', function() {
+  const btn = document.getElementById('login-btn');
+  btn.textContent = 'Signing in...';
+  btn.disabled = true;
+});
+</script>
 {% endblock %}

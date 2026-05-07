@@ -1,7 +1,8 @@
 """
-User model — stores Google OAuth profile + role.
+User model — Google OAuth + email/password authentication.
 """
 from flask_login import UserMixin
+from werkzeug.security import generate_password_hash, check_password_hash
 from extensions import db
 from datetime import datetime
 
@@ -10,9 +11,10 @@ class User(db.Model, UserMixin):
     __tablename__ = "users"
 
     id              = db.Column(db.Integer, primary_key=True)
-    google_id       = db.Column(db.String(100), unique=True)
+    google_id       = db.Column(db.String(100), unique=True, nullable=True)
     name            = db.Column(db.String(120), nullable=False)
     email           = db.Column(db.String(180), unique=True, nullable=False)
+    password_hash   = db.Column(db.String(256), nullable=True)   # NULL for Google-only accounts
     avatar          = db.Column(db.String(500))
     phone           = db.Column(db.String(20))
     role            = db.Column(db.Enum("user", "mechanic", "admin"), default="user")
@@ -35,6 +37,15 @@ class User(db.Model, UserMixin):
     requests         = db.relationship("Request", backref="requester", lazy=True,
                                        foreign_keys="Request.user_id")
     notifications    = db.relationship("Notification", backref="recipient", lazy=True)
+
+    # ── Password helpers ─────────────────────────────────────
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        if not self.password_hash:
+            return False
+        return check_password_hash(self.password_hash, password)
 
     def to_dict(self):
         return {

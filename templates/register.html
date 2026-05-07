@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+{% block title %}Create Account — RoadSide+{% endblock %}
+{% block extra_css %}
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+.auth-page{display:flex;min-height:100vh;background:#F0F4F8;font-family:'Plus Jakarta Sans',sans-serif}
+.auth-left{flex:1;background:linear-gradient(145deg,#1E3A5F 0%,#2D5F8A 55%,#1E3A5F 100%);padding:3rem;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden}
+.auth-left::before{content:'';position:absolute;width:500px;height:500px;border-radius:50%;background:rgba(255,107,53,.12);top:-150px;right:-150px;animation:blob 10s ease-in-out infinite}
+.auth-left::after{content:'';position:absolute;width:350px;height:350px;border-radius:50%;background:rgba(0,184,148,.08);bottom:-100px;left:-100px;animation:blob 13s ease-in-out infinite reverse}
+@keyframes blob{0%,100%{transform:scale(1)}50%{transform:scale(1.08) translate(15px,-15px)}}
+.auth-brand{display:flex;align-items:center;gap:.75rem;margin-bottom:2.5rem;position:relative;z-index:1}
+.auth-brand .mark{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#FF6B35,#E55A26);display:flex;align-items:center;justify-content:center;font-size:1.3rem;box-shadow:0 6px 20px rgba(255,107,53,.4)}
+.auth-brand .name{font-size:1.4rem;font-weight:800;color:#fff}.auth-brand .name span{color:#FF8C5A}
+.auth-hero{position:relative;z-index:1;margin-bottom:2rem}
+.auth-hero h1{font-size:2.4rem;font-weight:800;color:#fff;line-height:1.2;margin-bottom:.75rem}
+.auth-hero h1 span{color:#FF8C5A}
+.auth-hero p{color:rgba(255,255,255,.65);font-size:.95rem;line-height:1.65;max-width:360px}
+.role-cards{display:grid;grid-template-columns:1fr 1fr;gap:1rem;position:relative;z-index:1}
+.role-info{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:1.25rem}
+.role-info-icon{font-size:1.75rem;margin-bottom:.5rem}
+.role-info-title{font-size:.9rem;font-weight:700;color:#fff;margin-bottom:.3rem}
+.role-info-desc{font-size:.75rem;color:rgba(255,255,255,.5);line-height:1.5}
+
+.auth-right{width:520px;display:flex;align-items:center;justify-content:center;padding:2rem;background:#F0F4F8;overflow-y:auto}
+.auth-card{background:#fff;border-radius:24px;padding:2.25rem;width:100%;box-shadow:0 12px 48px rgba(0,0,0,.12);border:1px solid rgba(0,0,0,.06)}
+.auth-card-header{margin-bottom:1.5rem}
+.auth-card-header h2{font-size:1.5rem;font-weight:800;color:#1A2332;margin-bottom:.35rem}
+.auth-card-header p{color:#5A6A7A;font-size:.875rem}
+
+.btn-google{display:flex;align-items:center;justify-content:center;gap:.75rem;width:100%;padding:.85rem;background:#fff;color:#333;font-weight:700;font-size:.9rem;border-radius:14px;text-decoration:none;border:1.5px solid #E2E8F0;box-shadow:0 2px 8px rgba(0,0,0,.06);transition:all .2s;font-family:inherit;cursor:pointer}
+.btn-google:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.12);border-color:#CBD5E0}
+.auth-divider{text-align:center;position:relative;margin:1.1rem 0;color:#9AA5B4;font-size:.78rem}
+.auth-divider::before,.auth-divider::after{content:'';position:absolute;top:50%;width:42%;height:1px;background:#E2E8F0}
+.auth-divider::before{left:0}.auth-divider::after{right:0}
+
+.f-group{margin-bottom:.875rem}
+.f-label{display:block;font-size:.78rem;font-weight:700;color:#5A6A7A;margin-bottom:.3rem}
+.f-label .req{color:#FF6B35}
+.f-input{width:100%;padding:.7rem 1rem;background:#F8FAFC;border:1.5px solid #E2E8F0;border-radius:12px;font-size:.875rem;font-family:inherit;color:#1A2332;transition:all .18s}
+.f-input:focus{outline:none;border-color:#FF6B35;background:#fff;box-shadow:0 0 0 3px rgba(255,107,53,.08)}
+.f-input::placeholder{color:#9AA5B4}
+.f-row{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+.f-input-wrap{position:relative}
+.f-input-wrap .f-input{padding-right:3rem}
+.pw-toggle{position:absolute;right:.875rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#9AA5B4;font-size:.95rem;padding:.2rem}
+.f-hint{font-size:.7rem;color:#9AA5B4;margin-top:.25rem}
+
+/* Role selector */
+.role-selector{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:.875rem}
+.role-opt{display:none}
+.role-opt + label{
+  display:flex;flex-direction:column;align-items:center;padding:.875rem .5rem;
+  border-radius:14px;border:2px solid #E2E8F0;cursor:pointer;transition:all .18s;
+  font-size:.78rem;font-weight:700;color:#5A6A7A;text-align:center;background:#F8FAFC;
+}
+.role-opt + label .role-lbl-icon{font-size:1.6rem;margin-bottom:.3rem}
+.role-opt:checked + label{border-color:#FF6B35;background:#FFF4F0;color:#FF6B35}
+.role-opt + label:hover{border-color:#FF6B35;color:#FF6B35}
+
+/* Password strength */
+.pw-strength{height:4px;border-radius:99px;background:#E2E8F0;margin-top:.4rem;overflow:hidden}
+.pw-strength-bar{height:100%;border-radius:99px;width:0;transition:all .3s}
+.pw-strength-text{font-size:.68rem;margin-top:.2rem;font-weight:600}
+
+.btn-submit{width:100%;padding:.875rem;border-radius:14px;background:linear-gradient(135deg,#FF6B35,#E55A26);color:#fff;font-weight:800;font-size:1rem;border:none;cursor:pointer;font-family:inherit;box-shadow:0 6px 18px rgba(255,107,53,.35);transition:all .2s;margin-top:.5rem}
+.btn-submit:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(255,107,53,.45)}
+.auth-switch{text-align:center;font-size:.82rem;color:#9AA5B4;margin-top:1rem}
+.auth-switch a{color:#FF6B35;font-weight:700;text-decoration:none}
+
+@media(max-width:768px){.auth-left{display:none}.auth-right{width:100%;padding:1rem}.auth-card{padding:1.5rem}}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+  <!-- Left panel -->
+  <div class="auth-left">
+    <div class="auth-brand">
+      <div class="mark">🚗</div>
+      <div class="name">RoadSide<span>+</span></div>
+    </div>
+    <div class="auth-hero">
+      <h1>Join 12,000+<br><span>drivers & mechanics</span></h1>
+      <p>Create your free account and get access to India's fastest AI-powered roadside assistance platform.</p>
+    </div>
+    <div class="role-cards">
+      <div class="role-info">
+        <div class="role-info-icon">👤</div>
+        <div class="role-info-title">As a User</div>
+        <div class="role-info-desc">Request emergency help, track mechanics in real-time, pay securely and review your experience.</div>
+      </div>
+      <div class="role-info">
+        <div class="role-info-icon">🔧</div>
+        <div class="role-info-title">As a Mechanic</div>
+        <div class="role-info-desc">Accept jobs near you, earn daily, build your reputation and grow your business.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right panel -->
+  <div class="auth-right">
+    <div class="auth-card">
+      <div class="auth-card-header">
+        <h2>Create your account 🚀</h2>
+        <p>Free forever — no credit card required</p>
+      </div>
+
+      <!-- Google Sign-Up -->
+      <a href="{{ url_for('auth.google_login') }}" class="btn-google" id="google-register-btn">
+        <svg width="20" height="20" viewBox="0 0 24 24">
+          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+        </svg>
+        Sign up with Google
+      </a>
+
+      <div class="auth-divider"><span>or register with email</span></div>
+
+      <!-- Registration Form -->
+      <form method="POST" action="{{ url_for('auth.register_post') }}" id="register-form">
+        <!-- Role -->
+        <div class="f-group">
+          <div class="f-label">I am a <span class="req">*</span></div>
+          <div class="role-selector">
+            <input class="role-opt" type="radio" name="role" id="role-user" value="user" checked/>
+            <label for="role-user"><span class="role-lbl-icon">👤</span>User<br><span style="font-size:.68rem;font-weight:500;opacity:.7">Need help</span></label>
+            <input class="role-opt" type="radio" name="role" id="role-mechanic" value="mechanic"/>
+            <label for="role-mechanic"><span class="role-lbl-icon">🔧</span>Mechanic<br><span style="font-size:.68rem;font-weight:500;opacity:.7">Provide help</span></label>
+          </div>
+        </div>
+
+        <div class="f-row">
+          <div class="f-group">
+            <label class="f-label" for="name">Full Name <span class="req">*</span></label>
+            <input class="f-input" type="text" id="name" name="name" placeholder="Rajan Kumar" required autocomplete="name"/>
+          </div>
+          <div class="f-group">
+            <label class="f-label" for="phone">Phone Number</label>
+            <input class="f-input" type="tel" id="phone" name="phone" placeholder="+91 98765 43210"/>
+          </div>
+        </div>
+
+        <div class="f-group">
+          <label class="f-label" for="reg-email">Email Address <span class="req">*</span></label>
+          <input class="f-input" type="email" id="reg-email" name="email" placeholder="you@example.com" required autocomplete="email"/>
+        </div>
+
+        <div class="f-row">
+          <div class="f-group">
+            <label class="f-label" for="reg-password">Password <span class="req">*</span></label>
+            <div class="f-input-wrap">
+              <input class="f-input" type="password" id="reg-password" name="password" placeholder="Min 8 characters" required autocomplete="new-password" oninput="checkStrength(this.value)"/>
+              <button type="button" class="pw-toggle" onclick="togglePw('reg-password',this)">👁</button>
+            </div>
+            <div class="pw-strength"><div class="pw-strength-bar" id="pw-bar"></div></div>
+            <div class="pw-strength-text" id="pw-text" style="color:#9AA5B4"></div>
+          </div>
+          <div class="f-group">
+            <label class="f-label" for="confirm-password">Confirm Password <span class="req">*</span></label>
+            <div class="f-input-wrap">
+              <input class="f-input" type="password" id="confirm-password" name="confirm_password" placeholder="Repeat password" required autocomplete="new-password"/>
+              <button type="button" class="pw-toggle" onclick="togglePw('confirm-password',this)">👁</button>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:flex-start;gap:.6rem;margin:.75rem 0;font-size:.78rem;color:#5A6A7A">
+          <input type="checkbox" id="agree-terms" required style="margin-top:2px;accent-color:#FF6B35;flex-shrink:0"/>
+          <label for="agree-terms">I agree to the <a href="#" style="color:#FF6B35;font-weight:600">Terms of Service</a> and <a href="#" style="color:#FF6B35;font-weight:600">Privacy Policy</a></label>
+        </div>
+
+        <button type="submit" class="btn-submit" id="register-btn">Create Account →</button>
+      </form>
+
+      <div class="auth-switch">Already have an account? <a href="{{ url_for('auth.login') }}">Sign in</a></div>
+    </div>
+  </div>
+</div>
+
+<script>
+function togglePw(id, btn) {
+  const el = document.getElementById(id);
+  el.type = el.type === 'password' ? 'text' : 'password';
+  btn.textContent = el.type === 'password' ? '👁' : '🙈';
+}
+
+function checkStrength(pw) {
+  const bar  = document.getElementById('pw-bar');
+  const text = document.getElementById('pw-text');
+  if (!pw) { bar.style.width='0'; text.textContent=''; return; }
+  let score = 0;
+  if (pw.length >= 8)  score++;
+  if (pw.length >= 12) score++;
+  if (/[A-Z]/.test(pw)) score++;
+  if (/[0-9]/.test(pw)) score++;
+  if (/[^A-Za-z0-9]/.test(pw)) score++;
+  const levels = [
+    {w:'20%', c:'#E55039', t:'Weak'},
+    {w:'40%', c:'#F0A500', t:'Fair'},
+    {w:'60%', c:'#F0A500', t:'Good'},
+    {w:'80%', c:'#00B894', t:'Strong'},
+    {w:'100%',c:'#00B894', t:'Very Strong'},
+  ];
+  const l = levels[Math.min(score, 4)];
+  bar.style.width  = l.w;
+  bar.style.background = l.c;
+  text.textContent = l.t;
+  text.style.color = l.c;
+}
+
+document.getElementById('register-form').addEventListener('submit', function(e) {
+  const pw = document.getElementById('reg-password').value;
+  const cp = document.getElementById('confirm-password').value;
+  if (pw !== cp) {
+    e.preventDefault();
+    alert('Passwords do not match. Please try again.');
+    return;
+  }
+  const btn = document.getElementById('register-btn');
+  btn.textContent = 'Creating account...';
+  btn.disabled = true;
+});
+</script>
+{% endblock %}
