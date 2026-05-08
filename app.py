@@ -88,6 +88,8 @@ def create_app(config_class=Config):
     return app
 
 
+# Expose globally for Vercel WSGI
+app = create_app()
+
 if __name__ == "__main__":
-    app = create_app()
     socketio.run(app, host="0.0.0.0", port=5000, debug=True, allow_unsafe_werkzeug=True)
