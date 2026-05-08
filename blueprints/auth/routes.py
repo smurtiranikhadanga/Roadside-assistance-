@@ -129,6 +129,11 @@ def register_post():
 # ── Google OAuth ─────────────────────────────────────────────
 @auth_bp.route("/google")
 def google_login():
+    from flask import current_app
+    if not current_app.config.get("GOOGLE_CLIENT_ID") or current_app.config.get("GOOGLE_CLIENT_ID") == "placeholder":
+        flash("Google Sign-In is not configured (missing API keys). Please use Demo Login instead.", "warning")
+        return redirect(url_for("auth.login"))
+
     from extensions import oauth
     redirect_uri = url_for("auth.google_callback", _external=True)
     return oauth.google.authorize_redirect(redirect_uri)
@@ -145,6 +150,7 @@ def google_callback():
         if not userinfo:
             userinfo = oauth.google.userinfo()
     except Exception as e:
+        print(f"Google Auth Error: {e}")
         flash("Google login failed. Please try again.", "danger")
         return redirect(url_for("auth.login"))
 

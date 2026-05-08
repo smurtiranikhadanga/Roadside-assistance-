@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   nearby.js — Real places from Overpass API (OSM) + OSRM routing
+   nearby.js — Real places from Google Places API + Distance Matrix
    Petrol pumps, mechanics, toll gates — displayed on Google Maps
 ═══════════════════════════════════════════════════════════════ */
 
@@ -14,76 +14,124 @@ const NearbyPlaces = {
       label: 'Petrol Pumps',
       icon:  '⛽',
       color: '#FF6B35',
-      query: (lat, lng, r) =>
-        `[out:json][timeout:20];(node["amenity"="fuel"](around:${r},${lat},${lng});way["amenity"="fuel"](around:${r},${lat},${lng}););out center;`,
+      type: 'gas_station',
+      keyword: 'petrol pump gas station',
       markerColor: '#FF6B35',
     },
     mechanic: {
       label: 'Mechanics / Garages',
       icon:  '🔧',
       color: '#00B894',
-      query: (lat, lng, r) =>
-        `[out:json][timeout:20];(node["shop"="car_repair"](around:${r},${lat},${lng});node["amenity"="car_repair"](around:${r},${lat},${lng});way["shop"="car_repair"](around:${r},${lat},${lng}););out center;`,
+      type: 'car_repair',
+      keyword: 'mechanic car repair garage',
       markerColor: '#00B894',
     },
     toll: {
       label: 'Toll Gates',
       icon:  '🛣️',
       color: '#6C5CE7',
-      query: (lat, lng, r) =>
-        `[out:json][timeout:20];(node["barrier"="toll_booth"](around:${r},${lat},${lng});node["highway"="toll_booth"](around:${r},${lat},${lng}););out center;`,
+      type: 'transit_station',
+      keyword: 'toll plaza toll booth',
       markerColor: '#6C5CE7',
     },
   },
 
-  // ── Fetch from Overpass ─────────────────────────────────────
+  // ── Fetch from Google Places API ────────────────────────────
   async fetchCategory(cat, lat, lng, radiusM = 5000) {
     const key = `${cat}:${lat.toFixed(3)}:${lng.toFixed(3)}`;
     if (this.cache[key]) return this.cache[key];
 
-    const query = this.CATEGORIES[cat].query(lat, lng, radiusM);
-    const url   = 'https://overpass-api.de/api/interpreter';
+    return new Promise((resolve) => {
+      if (!window.userMap) {
+        console.warn('Map not initialized for Places API');
+        resolve([]);
+        return;
+      }
 
-    try {
-      const res  = await fetch(url, { method: 'POST', body: query });
-      const data = await res.json();
-      const places = data.elements.map(el => ({
-        id:   el.id,
-        lat:  el.lat || el.center?.lat,
-        lng:  el.lon || el.center?.lon,
-        name: el.tags?.name || el.tags?.['name:en'] || this.CATEGORIES[cat].label,
-        brand: el.tags?.brand || '',
-        phone: el.tags?.phone || el.tags?.['contact:phone'] || '',
-        addr:  [el.tags?.['addr:housenumber'], el.tags?.['addr:street'], el.tags?.['addr:city']].filter(Boolean).join(', '),
-        open:  el.tags?.opening_hours || '',
-        cat,
-      })).filter(p => p.lat && p.lng);
+      const service = new google.maps.places.PlacesService(window.userMap);
+      const request = {
+        location: new google.maps.LatLng(lat, lng),
+        radius: radiusM,
+        type: this.CATEGORIES[cat].type,
+        keyword: this.CATEGORIES[cat].keyword
+      };
 
-      this.cache[key] = places;
-      return places;
-    } catch (e) {
-      console.warn('Overpass error:', e);
-      return [];
-    }
+      service.nearbySearch(request, (results, status) => {
+        if (status === google.maps.places.PlacesServiceStatus.OK && results) {
+          const places = results.map(p => ({
+            id: p.place_id,
+            lat: p.geometry.location.lat(),
+            lng: p.geometry.location.lng(),
+            name: p.name,
+            addr: p.vicinity || '',
+            open: p.opening_hours ? (p.opening_hours.isOpen() ? 'Open Now' : 'Closed') : '',
+            rating: p.rating || null,
+            phone: '', // Fetched on demand
+            cat: cat,
+            place_id: p.place_id
+          }));
+          this.cache[key] = places;
+          resolve(places);
+        } else {
+          resolve([]);
+        }
+      });
+    });
   },
 
-  // ── OSRM routing — travel time + distance ──────────────────
-  async getRoute(fromLat, fromLng, toLat, toLng) {
-    const url = `https://router.project-osrm.org/route/v1/driving/${fromLng},${fromLat};${toLng},${toLat}?overview=false&alternatives=false`;
-    try {
-      const res  = await fetch(url);
-      const data = await res.json();
-      if (data.code === 'Ok' && data.routes[0]) {
-        const r = data.routes[0];
-        return {
-          duration: Math.ceil(r.duration / 60),   // minutes
-          distance: (r.distance / 1000).toFixed(1), // km
-        };
-      }
-    } catch (e) {}
-    // Fallback: haversine estimate
-    const dist = haversine(fromLat, fromLng, toLat, toLng);
-    return { duration: Math.ceil(dist / 0.5), distance: dist.toFixed(1) };
+  // ── Fetch Details (Phone number) on demand ───────────────────
+  async fetchPlaceDetails(placeId) {
+    return new Promise((resolve) => {
+      if (!window.userMap) return resolve(null);
+      const service = new google.maps.places.PlacesService(window.userMap);
+      service.getDetails({ placeId: placeId, fields: ['formatted_phone_number'] }, (place, status) => {
+        if (status === google.maps.places.PlacesServiceStatus.OK && place && place.formatted_phone_number) {
+          resolve(place.formatted_phone_number);
+        } else {
+          resolve(null);
+        }
+      });
+    });
+  },
+
+  // ── Google Distance Matrix — travel time + distance ───────────
+  async getRoutesBatch(fromLat, fromLng, placesList) {
+    if (!placesList || placesList.length === 0) return;
+    
+    return new Promise((resolve) => {
+      const service = new google.maps.DistanceMatrixService();
+      const destinations = placesList.map(p => new google.maps.LatLng(p.lat, p.lng));
+      
+      service.getDistanceMatrix({
+        origins: [new google.maps.LatLng(fromLat, fromLng)],
+        destinations: destinations,
+        travelMode: google.maps.TravelMode.DRIVING,
+      }, (response, status) => {
+        if (status === 'OK' && response.rows[0]) {
+          const elements = response.rows[0].elements;
+          placesList.forEach((p, idx) => {
+            const el = elements[idx];
+            if (el.status === 'OK') {
+              p.duration = Math.ceil(el.duration.value / 60); // minutes
+              p.distKm   = (el.distance.value / 1000).toFixed(1); // km
+            } else {
+              // Fallback
+              const dist = haversine(fromLat, fromLng, p.lat, p.lng);
+              p.duration = Math.ceil(dist / 0.5);
+              p.distKm = dist.toFixed(1);
+            }
+          });
+        } else {
+          // Fallback for all
+          placesList.forEach(p => {
+            const dist = haversine(fromLat, fromLng, p.lat, p.lng);
+            p.duration = Math.ceil(dist / 0.5);
+            p.distKm = dist.toFixed(1);
+          });
+        }
+        resolve();
+      });
+    });
   },
 
   // ── Load all categories and show on map + panel ─────────────
@@ -100,14 +148,10 @@ const NearbyPlaces = {
       results[cat] = await this.fetchCategory(cat, lat, lng);
     }));
 
-    // Add OSRM ETAs for closest 5 of each category
+    // Add ETA via Distance Matrix for top 8 of each category
     await Promise.all(Object.keys(results).map(async cat => {
       const places = results[cat].slice(0, 8);
-      await Promise.all(places.map(async p => {
-        const route = await this.getRoute(lat, lng, p.lat, p.lng);
-        p.duration = route.duration;
-        p.distKm   = route.distance;
-      }));
+      await this.getRoutesBatch(lat, lng, places);
       results[cat] = places.sort((a, b) => (a.duration || 999) - (b.duration || 999));
     }));
 
@@ -117,7 +161,7 @@ const NearbyPlaces = {
       results[cat].forEach(p => {
         const marker = new google.maps.Marker({
           position: { lat: p.lat, lng: p.lng },
-          map: userMap,
+          map: window.userMap,
           title: p.name,
           label: {
             text: cfg.icon,
@@ -136,8 +180,17 @@ const NearbyPlaces = {
           content: this.buildPopup(p),
           maxWidth: 280,
         });
-        marker.addListener('click', () => {
-          iw.open(userMap, marker);
+        marker.addListener('click', async () => {
+          // Fetch phone dynamically if missing
+          if (!p.phoneFetched) {
+            p.phoneFetched = true;
+            const phone = await this.fetchPlaceDetails(p.place_id);
+            if (phone) {
+              p.phone = phone;
+              iw.setContent(this.buildPopup(p));
+            }
+          }
+          iw.open(window.userMap, marker);
           this.showPlaceDetail(p, lat, lng);
         });
         this.markers.all.push({ marker, infoWindow: iw, lat: p.lat, lng: p.lng });
@@ -150,14 +203,19 @@ const NearbyPlaces = {
 
   buildPopup(p) {
     const cfg = this.CATEGORIES[p.cat];
+    const ratingHtml = p.rating ? ` <span style="color:#F1C40F">★ ${p.rating}</span>` : '';
+    const phoneHtml = p.phone ? `<div style="font-size:.78rem;color:#5A6A7A;margin-bottom:.25rem">📞 ${p.phone}</div>` : '';
+    
     return `
       <div style="font-family:'Plus Jakarta Sans',sans-serif;min-width:200px">
         <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.5rem">
           <span style="font-size:1.4rem">${cfg.icon}</span>
           <strong style="font-size:.95rem;color:#1E3A5F">${p.name}</strong>
         </div>
+        ${ratingHtml ? `<div style="font-size:.78rem;font-weight:700;margin-bottom:.25rem">${ratingHtml}</div>` : ''}
         ${p.addr ? `<div style="font-size:.78rem;color:#5A6A7A;margin-bottom:.25rem">📍 ${p.addr}</div>` : ''}
         ${p.open ? `<div style="font-size:.78rem;color:#5A6A7A;margin-bottom:.25rem">🕐 ${p.open}</div>` : ''}
+        ${phoneHtml}
         ${p.duration ? `<div style="font-size:.82rem;font-weight:700;color:#FF6B35;margin:.4rem 0">⏱️ ${p.duration} min · ${p.distKm} km away</div>` : ''}
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:.4rem;margin-top:.6rem">
           <button onclick="NearbyPlaces.goThere(${p.lat},${p.lng})"
@@ -209,6 +267,8 @@ const NearbyPlaces = {
     const cfg = this.CATEGORIES[p.cat];
     const eta = p.duration ? `${p.duration} min` : '—';
     const dist = p.distKm ? `${p.distKm} km` : '';
+    const ratingHtml = p.rating ? `<div style="font-size:.7rem;color:#F1C40F;margin-top:.1rem">★ ${p.rating}</div>` : '';
+    
     return `
       <div class="nearby-item" data-cat="${p.cat}" onclick="NearbyPlaces.selectItem(${p.lat},${p.lng})"
         style="display:flex;align-items:center;gap:.875rem;padding:.875rem 1rem;border-radius:14px;border:1.5px solid #E5EAF0;background:#fff;margin-bottom:.6rem;cursor:pointer;transition:all .18s">
@@ -216,6 +276,7 @@ const NearbyPlaces = {
         <div style="flex:1;min-width:0">
           <div style="font-size:.875rem;font-weight:700;color:#1E3A5F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name}</div>
           <div style="font-size:.75rem;color:#5A6A7A;margin-top:.1rem">${p.addr || cfg.label}</div>
+          ${ratingHtml}
         </div>
         <div style="text-align:right;flex-shrink:0">
           <div style="font-size:.9rem;font-weight:800;color:#FF6B35">${eta}</div>
@@ -245,42 +306,64 @@ const NearbyPlaces = {
   },
 
   selectItem(lat, lng) {
-    if (!userMap) return;
-    userMap.panTo({ lat, lng });
-    userMap.setZoom(16);
+    if (!window.userMap) return;
+    window.userMap.panTo({ lat, lng });
+    window.userMap.setZoom(16);
     // Find and open matching info window
     this.markers.all.forEach(({ marker, infoWindow, lat: mLat, lng: mLng }) => {
       if (Math.abs(mLat - lat) < 0.0001 && Math.abs(mLng - lng) < 0.0001) {
-        infoWindow.open(userMap, marker);
+        infoWindow.open(window.userMap, marker);
       }
     });
+  },
+  
+  showPlaceDetail(p, lat, lng) {
+      // Stub for marker click hook
   },
 
   // ── Go There (open Google Maps directions) ─────────────────
   goThere(toLat, toLng) {
-    const from = (userLat && userLng) ? `${userLat},${userLng}` : '';
+    const from = (window.userLat && window.userLng) ? `${window.userLat},${window.userLng}` : '';
     const url  = `https://www.google.com/maps/dir/${from}/${toLat},${toLng}`;
     window.open(url, '_blank');
   },
 
   // ── Notify Modal ────────────────────────────────────────────
-  showNotifyModal(place) {
+  async showNotifyModal(place) {
     this.selectedPlace = place;
     const cfg = this.CATEGORIES[place.cat];
     const modal = document.getElementById('notify-place-modal');
+    
+    // Attempt to fetch phone if not yet fetched
+    if (!place.phoneFetched) {
+        place.phoneFetched = true;
+        const phone = await this.fetchPlaceDetails(place.place_id);
+        if (phone) place.phone = phone;
+    }
+    
     if (!modal) return this.notifyPlace(place);
 
     document.getElementById('npm-icon').textContent  = cfg.icon;
     document.getElementById('npm-name').textContent  = place.name;
     document.getElementById('npm-cat').textContent   = cfg.label;
     document.getElementById('npm-eta').textContent   = place.duration ? `${place.duration} min · ${place.distKm} km` : 'Calculating...';
-    document.getElementById('npm-addr').textContent  = place.addr || 'Address from OpenStreetMap';
+    document.getElementById('npm-addr').textContent  = place.addr || 'Address from Google Maps';
     modal.classList.add('open');
   },
 
   notifyPlace(place) {
     // Build notification message with user location
-    const msg = `🚨 Roadside Assistance Needed\n\nHello, I am stranded and need help!\n📍 My location: ${userLat?.toFixed(5)}, ${userLng?.toFixed(5)}\nhttps://www.google.com/maps?q=${userLat},${userLng}\n\n🚗 Issue: ${selectedService || 'Vehicle breakdown'}\n⏱️ I'm approximately ${place.duration} min away from your location.\n\nPlease assist — sent via RoadSide+`;
+    const msg = `🚨 Roadside Assistance Needed\n\nHello, I am stranded and need help!\n📍 My location: ${window.userLat?.toFixed(5)}, ${window.userLng?.toFixed(5)}\nhttps://www.google.com/maps?q=${window.userLat},${window.userLng}\n\n🚗 Issue: ${window.selectedService || 'Vehicle breakdown'}\n⏱️ I'm approximately ${place.duration} min away from your location.\n\nPlease assist — sent via RoadSide+`;
+
+    if (place.phone && !navigator.share) {
+        // If we have a phone number, attempt to call or open whatsapp
+        const phone = place.phone.replace(/[^0-9+]/g, '');
+        if (phone) {
+            window.open(`tel:${phone}`);
+            if (typeof closeModal === 'function') closeModal('notify-place-modal');
+            return;
+        }
+    }
 
     // Share via Web Share API if available
     if (navigator.share) {

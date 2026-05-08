@@ -166,5 +166,5 @@
 <script src="{{ url_for('static', filename='js/maps.js') }}"></script>
 <script src="{{ url_for('static', filename='js/mechanic.js') }}"></script>
 {# Google Maps JS API — callback triggers initMechanicMap() defined in maps.js #}
-<script src="https://maps.googleapis.com/maps/api/js?key={{ maps_key }}&callback=initMechanicMap" async defer></script>
+<script src="https://maps.googleapis.com/maps/api/js?key={{ maps_key }}&libraries=places&callback=initMechanicMap" async defer></script>
 {% endblock %}

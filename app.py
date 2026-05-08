@@ -1,8 +1,19 @@
 """
 RoadSide+ — Flask Application Factory
 """
-import eventlet
-eventlet.monkey_patch()
+
+import sys
+import os
+os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
+os.environ["AUTHLIB_INSECURE_TRANSPORT"] = "1"
+
+class MockPkgResources:
+    class DistributionNotFound(Exception): pass
+    def get_distribution(self, name):
+        class Dist:
+            version = "mock"
+        return Dist()
+sys.modules['pkg_resources'] = MockPkgResources()
 
 from flask import Flask, redirect, url_for
 from flask_login import current_user
@@ -79,4 +90,4 @@ def create_app(config_class=Config):
 
 if __name__ == "__main__":
     app = create_app()
-    socketio.run(app, host="0.0.0.0", port=5000, debug=True)
+    socketio.run(app, host="0.0.0.0", port=5000, debug=True, allow_unsafe_werkzeug=True)

@@ -6,6 +6,7 @@ import os
 from dotenv import load_dotenv
 
 load_dotenv()
+os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
 
 class Config:
@@ -49,4 +50,4 @@ class Config:
     BASE_URL = os.getenv("BASE_URL", "http://localhost:5000")
 
     # ── SocketIO ───────────────────────────────────────────────────────────
-    SOCKETIO_ASYNC_MODE = "eventlet"
+    SOCKETIO_ASYNC_MODE = "threading"
