@@ -19,7 +19,10 @@ class Config:
     USE_SQLITE = os.getenv("USE_SQLITE", "1") == "1"
 
     if USE_SQLITE:
-        SQLALCHEMY_DATABASE_URI = "sqlite:///roadside.db"
+        if os.getenv("VERCEL") == "1":
+            SQLALCHEMY_DATABASE_URI = "sqlite:////tmp/roadside.db"
+        else:
+            SQLALCHEMY_DATABASE_URI = "sqlite:///roadside.db"
     else:
         _h = os.getenv("DB_HOST", "localhost")
         _p = os.getenv("DB_PORT", "3306")
