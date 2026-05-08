@@ -7,6 +7,11 @@ import os
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 os.environ["AUTHLIB_INSECURE_TRANSPORT"] = "1"
 
+# Selective eventlet patch — excludes greendns to keep system DNS working
+# (greendns breaks external HTTPS calls like Google OAuth on Windows)
+import eventlet
+eventlet.monkey_patch(os=True, select=True, socket=True, thread=True, time=True)
+
 class MockPkgResources:
     class DistributionNotFound(Exception): pass
     def get_distribution(self, name):
@@ -49,6 +54,7 @@ def create_app(config_class=Config):
         name="google",
         client_id=_cid, client_secret=_cs,
         server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
+        jwks_uri="https://www.googleapis.com/oauth2/v3/certs",
         client_kwargs={"scope": "openid email profile"},
     )
 

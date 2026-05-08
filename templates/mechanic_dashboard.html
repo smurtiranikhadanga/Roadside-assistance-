@@ -165,6 +165,8 @@
 <script src="{{ url_for('static', filename='js/charts.js') }}"></script>
 <script src="{{ url_for('static', filename='js/maps.js') }}"></script>
 <script src="{{ url_for('static', filename='js/mechanic.js') }}"></script>
-{# Google Maps JS API — callback triggers initMechanicMap() defined in maps.js #}
-<script src="https://maps.googleapis.com/maps/api/js?key={{ maps_key }}&libraries=places&callback=initMechanicMap" async defer></script>
+{# Leaflet.js — free maps, no API key required #}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>document.addEventListener('DOMContentLoaded', initMechanicMap);</script>
 {% endblock %}

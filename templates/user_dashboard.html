@@ -425,6 +425,8 @@
     setTimeout(() => { showSection('emergency'); selectService(PENDING_SERVICE); }, 400);
   }
 </script>
-{# Google Maps JS API — callback triggers initMap() defined in maps.js #}
-<script src="https://maps.googleapis.com/maps/api/js?key={{ config.GOOGLE_MAPS_API_KEY }}&libraries=places&callback=initMap" async defer></script>
+{# Leaflet.js — free maps, no API key required #}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>document.addEventListener('DOMContentLoaded', initMap);</script>
 {% endblock %}

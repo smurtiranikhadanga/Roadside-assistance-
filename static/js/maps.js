@@ -1,58 +1,60 @@
-/* maps.js — Google Maps API */
+/* maps.js — Leaflet.js + OpenStreetMap (free, no API key required) */
 
 let userMap, trackingMap, mechanicMap;
 let userMarker, mechanicMarker;
-const mechMapMarkers = {};
 
-// Shared InfoWindow reused across markers on each map
-let userInfoWindow = null;
-let trackingInfoWindow = null;
-let mechanicInfoWindow = null;
+// ── Custom marker icons ────────────────────────────────────────
+function makeIcon(color, emoji, size = 36) {
+  return L.divIcon({
+    className: '',
+    html: `<div style="
+      width:${size}px;height:${size}px;border-radius:50%;
+      background:${color};border:3px solid #fff;
+      box-shadow:0 2px 8px rgba(0,0,0,.35);
+      display:flex;align-items:center;justify-content:center;
+      font-size:${Math.round(size * 0.45)}px;line-height:1;
+    ">${emoji}</div>`,
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+    popupAnchor: [0, -(size / 2 + 4)],
+  });
+}
 
-// ── User dashboard map (callback from Google Maps script) ─────
+// ── User dashboard map ─────────────────────────────────────────
 function initMap() {
   const el = document.getElementById('map');
   if (!el || userMap) return;
 
-  userInfoWindow = new google.maps.InfoWindow();
-
-  userMap = new google.maps.Map(el, {
-    center: { lat: 12.9716, lng: 77.5946 },
+  userMap = L.map('map', {
+    center: [12.9716, 77.5946],
     zoom: 13,
-    scrollwheel: false,
-    mapTypeControl: false,
-    streetViewControl: false,
-    fullscreenControl: false,
     zoomControl: true,
+    scrollWheelZoom: false,
   });
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    maxZoom: 19,
+  }).addTo(userMap);
+
+  // Expose globally for nearby.js
+  window.userMap = userMap;
 
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(pos => {
       userLat = pos.coords.latitude;
       userLng = pos.coords.longitude;
-      userMap.setCenter({ lat: userLat, lng: userLng });
-      userMap.setZoom(14);
+      window.userLat = userLat;
+      window.userLng = userLng;
 
-      // User marker (blue dot)
-      userMarker = new google.maps.Marker({
-        position: { lat: userLat, lng: userLng },
-        map: userMap,
-        title: 'You are here',
-        icon: {
-          path: google.maps.SymbolPath.CIRCLE,
-          scale: 9,
-          fillColor: '#4A90D9',
-          fillOpacity: 1,
-          strokeColor: '#ffffff',
-          strokeWeight: 3,
-        },
-        zIndex: 999,
-      });
+      userMap.setView([userLat, userLng], 14);
 
-      userInfoWindow.setContent('<div style="font-size:.85rem;font-weight:600;color:#1E3A5F">📍 You are here</div>');
-      userInfoWindow.open(userMap, userMarker);
+      userMarker = L.marker([userLat, userLng], { icon: makeIcon('#4A90D9', '📍', 38) })
+        .addTo(userMap)
+        .bindPopup('<b style="font-size:.88rem;color:#1E3A5F">📍 You are here</b>')
+        .openPopup();
 
-      // Reverse geocode via Nominatim
+      // Reverse geocode via Nominatim (free)
       fetch(`https://nominatim.openstreetmap.org/reverse?lat=${userLat}&lon=${userLng}&format=json`)
         .then(r => r.json()).then(data => {
           const addr = data.display_name || 'Your location';
@@ -65,20 +67,23 @@ function initMap() {
           if (ms) ms.textContent = '📍 Location detected — loading nearby places...';
         }).catch(() => {});
 
-      // Load real nearby places from Overpass API
+      // Load nearby places
       if (typeof NearbyPlaces !== 'undefined') {
         NearbyPlaces.loadAll(userLat, userLng);
       }
-
       loadNearbyMechanics();
     }, () => {
       const ms = document.getElementById('map-status');
       if (ms) ms.textContent = '⚠️ Location access denied — showing default map';
+      // Still load nearby for default center
+      if (typeof NearbyPlaces !== 'undefined') {
+        NearbyPlaces.loadAll(12.9716, 77.5946);
+      }
     });
   }
 }
 
-// ── Load nearby mechanics on map ─────────────────────────────
+// ── Load nearby mechanics on map ──────────────────────────────
 function loadNearbyMechanics() {
   const lat = userLat || 12.9716;
   const lng = userLng || 77.5946;
@@ -86,16 +91,11 @@ function loadNearbyMechanics() {
   fetch(`/api/v1/mechanics/nearby?lat=${lat}&lng=${lng}`)
     .then(r => r.json()).then(res => {
       const list = document.getElementById('mechanics-list');
-
-      // Clear old markers
-      Object.values(mechMapMarkers).forEach(m => m.setMap(null));
-
       if (!res.success || !res.data || !res.data.length) {
         if (list) list.innerHTML = '<div class="text-muted text-sm" style="padding:1rem">No mechanics found nearby. They may be offline.</div>';
         addDemoMechanicsToMap(lat, lng);
         return;
       }
-
       if (list) {
         list.innerHTML = res.data.map(m => `
           <div class="mechanic-card">
@@ -113,29 +113,12 @@ function loadNearbyMechanics() {
 
         res.data.forEach(m => {
           if (!m.latitude || !m.longitude) return;
-          const marker = new google.maps.Marker({
-            position: { lat: m.latitude, lng: m.longitude },
-            map: userMap,
-            title: m.name,
-            icon: {
-              path: google.maps.SymbolPath.CIRCLE,
-              scale: 8,
-              fillColor: '#00B894',
-              fillOpacity: 1,
-              strokeColor: '#ffffff',
-              strokeWeight: 2,
-            },
-          });
-          const iw = new google.maps.InfoWindow({
-            content: `<div style="font-size:.82rem"><strong>🔧 ${m.name}</strong><br>★ ${m.rating} · ${m.distance_km} km away</div>`,
-          });
-          marker.addListener('click', () => iw.open(userMap, marker));
-          mechMapMarkers[m.id] = marker;
+          L.marker([m.latitude, m.longitude], { icon: makeIcon('#00B894', '🔧', 34) })
+            .addTo(userMap)
+            .bindPopup(`<div style="font-size:.82rem"><strong>🔧 ${m.name}</strong><br>★ ${m.rating} · ${m.distance_km} km away</div>`);
         });
       }
-    }).catch(() => {
-      addDemoMechanicsToMap(lat, lng);
-    });
+    }).catch(() => addDemoMechanicsToMap(lat, lng));
 }
 
 function addDemoMechanicsToMap(lat, lng) {
@@ -161,133 +144,71 @@ function addDemoMechanicsToMap(lat, lng) {
   }
   if (!userMap) return;
   demos.forEach(m => {
-    const marker = new google.maps.Marker({
-      position: { lat: lat + m.d[0], lng: lng + m.d[1] },
-      map: userMap,
-      title: m.name,
-      icon: {
-        path: google.maps.SymbolPath.CIRCLE,
-        scale: 8,
-        fillColor: '#00B894',
-        fillOpacity: 1,
-        strokeColor: '#ffffff',
-        strokeWeight: 2,
-      },
-    });
-    const iw = new google.maps.InfoWindow({
-      content: `<div style="font-size:.82rem"><strong>🔧 ${m.name}</strong><br>★ ${m.r} · Demo mechanic</div>`,
-    });
-    marker.addListener('click', () => iw.open(userMap, marker));
+    L.marker([lat + m.d[0], lng + m.d[1]], { icon: makeIcon('#00B894', '🔧', 34) })
+      .addTo(userMap)
+      .bindPopup(`<div style="font-size:.82rem"><strong>🔧 ${m.name}</strong><br>★ ${m.r} · Demo mechanic</div>`);
   });
 }
 
 function refreshNearbyMechanics() { loadNearbyMechanics(); }
 
-// ── Tracking map ─────────────────────────────────────────────
+// ── Tracking map ──────────────────────────────────────────────
 function initTrackingMap(lat, lng) {
   const el = document.getElementById('tracking-map');
   if (!el) return;
+  if (trackingMap) { trackingMap.remove(); trackingMap = null; }
 
-  if (trackingMap) {
-    trackingMap = null;
-    el.innerHTML = '';
-  }
+  trackingMap = L.map('tracking-map', { scrollWheelZoom: false, zoomControl: true })
+    .setView([lat, lng], 14);
 
-  trackingInfoWindow = new google.maps.InfoWindow();
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors', maxZoom: 19,
+  }).addTo(trackingMap);
 
-  trackingMap = new google.maps.Map(el, {
-    center: { lat, lng },
-    zoom: 14,
-    scrollwheel: false,
-    mapTypeControl: false,
-    streetViewControl: false,
-    fullscreenControl: false,
-  });
-
-  const uMarker = new google.maps.Marker({
-    position: { lat, lng },
-    map: trackingMap,
-    title: 'Your Location',
-    icon: {
-      path: google.maps.SymbolPath.CIRCLE,
-      scale: 9,
-      fillColor: '#4A90D9',
-      fillOpacity: 1,
-      strokeColor: '#ffffff',
-      strokeWeight: 3,
-    },
-    zIndex: 999,
-  });
-  uMarker.addListener('click', () => {
-    trackingInfoWindow.setContent('<div style="font-size:.82rem;font-weight:600">📍 Your Location</div>');
-    trackingInfoWindow.open(trackingMap, uMarker);
-  });
+  L.marker([lat, lng], { icon: makeIcon('#4A90D9', '📍', 38) })
+    .addTo(trackingMap)
+    .bindPopup('<b style="font-size:.82rem">📍 Your Location</b>')
+    .openPopup();
 }
 
 function updateMechanicMarker(lat, lng) {
   if (!trackingMap) return;
   if (!mechanicMarker) {
-    mechanicMarker = new google.maps.Marker({
-      position: { lat, lng },
-      map: trackingMap,
-      title: 'Your Mechanic',
-      icon: {
-        path: google.maps.SymbolPath.CIRCLE,
-        scale: 10,
-        fillColor: '#00B894',
-        fillOpacity: 1,
-        strokeColor: '#ffffff',
-        strokeWeight: 3,
-      },
-    });
-    mechanicMarker.addListener('click', () => {
-      trackingInfoWindow.setContent('<div style="font-size:.82rem;font-weight:600">🔧 Your Mechanic</div>');
-      trackingInfoWindow.open(trackingMap, mechanicMarker);
-    });
+    mechanicMarker = L.marker([lat, lng], { icon: makeIcon('#00B894', '🔧', 38) })
+      .addTo(trackingMap)
+      .bindPopup('<b style="font-size:.82rem">🔧 Your Mechanic</b>');
   } else {
-    mechanicMarker.setPosition({ lat, lng });
+    mechanicMarker.setLatLng([lat, lng]);
   }
-  trackingMap.setCenter({ lat, lng });
+  trackingMap.setView([lat, lng], 14);
 }
 
-// ── Mechanic dashboard map ───────────────────────────────────
+// ── Mechanic dashboard map ────────────────────────────────────
 function initMechanicMap() {
   const el = document.getElementById('mechanic-location-map');
   if (!el || mechanicMap) return;
 
-  mechanicInfoWindow = new google.maps.InfoWindow();
+  mechanicMap = L.map('mechanic-location-map', { scrollWheelZoom: false, zoomControl: true })
+    .setView([12.9716, 77.5946], 13);
 
-  mechanicMap = new google.maps.Map(el, {
-    center: { lat: 12.9716, lng: 77.5946 },
-    zoom: 13,
-    scrollwheel: false,
-    mapTypeControl: false,
-    streetViewControl: false,
-    fullscreenControl: false,
-  });
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors', maxZoom: 19,
+  }).addTo(mechanicMap);
 
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(pos => {
       const { latitude: lat, longitude: lng } = pos.coords;
-      mechanicMap.setCenter({ lat, lng });
-      mechanicMap.setZoom(14);
-      const mk = new google.maps.Marker({
-        position: { lat, lng },
-        map: mechanicMap,
-        title: 'Your Location',
-        icon: {
-          path: google.maps.SymbolPath.CIRCLE,
-          scale: 9,
-          fillColor: '#FF6B35',
-          fillOpacity: 1,
-          strokeColor: '#ffffff',
-          strokeWeight: 3,
-        },
-      });
-      mk.addListener('click', () => {
-        mechanicInfoWindow.setContent('<div style="font-size:.82rem;font-weight:600">📍 Your Location</div>');
-        mechanicInfoWindow.open(mechanicMap, mk);
-      });
+      mechanicMap.setView([lat, lng], 14);
+      L.marker([lat, lng], { icon: makeIcon('#FF6B35', '📍', 38) })
+        .addTo(mechanicMap)
+        .bindPopup('<b style="font-size:.82rem">📍 Your Location</b>')
+        .openPopup();
     });
   }
 }
+
+// Alias for mechanic dashboard callback
+function initMechanicMap() {
+  initMechanicMap && window._mechanicMapInit && window._mechanicMapInit();
+}
+window._mechanicMapInit = initMechanicMap;
