@@ -9,8 +9,9 @@ os.environ["AUTHLIB_INSECURE_TRANSPORT"] = "1"
 
 # Selective eventlet patch — excludes greendns to keep system DNS working
 # (greendns breaks external HTTPS calls like Google OAuth on Windows)
-import eventlet
-eventlet.monkey_patch(os=True, select=True, socket=True, thread=True, time=True)
+# if not os.environ.get('DISABLE_EVENTLET'):
+#     import eventlet
+#     eventlet.monkey_patch(os=True, select=True, socket=True, thread=True, time=True)
 
 class MockPkgResources:
     class DistributionNotFound(Exception): pass

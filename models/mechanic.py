@@ -51,8 +51,6 @@ class Mechanic(db.Model):
     def score(self, user_lat, user_lng):
         """Score for matching: lower distance + higher rating = higher score."""
         dist = self.distance_to(user_lat, user_lng)
-        if dist > 20:
-            return -1  # too far
         return (0.5 * (1 / (dist + 0.1))) + (0.3 * float(self.rating) / 5) + (0.2 * min(self.total_jobs, 200) / 200)
 
     def to_dict(self, user_lat=None, user_lng=None):

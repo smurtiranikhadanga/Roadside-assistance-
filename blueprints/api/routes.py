@@ -188,16 +188,21 @@ def create_payment_order():
     if r.payment and r.payment.status == "paid":
         return error("Already paid")
 
-    rz = razorpay.Client(
-        auth=(current_app.config["RAZORPAY_KEY_ID"],
-              current_app.config["RAZORPAY_KEY_SECRET"])
-    )
+    key_id = current_app.config.get("RAZORPAY_KEY_ID")
     amount_paise = int(float(r.total_amount) * 100)  # Razorpay uses paise
-    order = rz.order.create({
-        "amount": amount_paise,
-        "currency": "INR",
-        "receipt": f"receipt_req_{r.id}",
-    })
+    
+    if not key_id or key_id == "YOUR_RAZORPAY_KEY_ID":
+        # Mock Razorpay
+        order = {"id": f"order_mock_{r.id}"}
+    else:
+        rz = razorpay.Client(
+            auth=(key_id, current_app.config.get("RAZORPAY_KEY_SECRET"))
+        )
+        order = rz.order.create({
+            "amount": amount_paise,
+            "currency": "INR",
+            "receipt": f"receipt_req_{r.id}",
+        })
 
     payment = Payment(
         request_id=r.id,
@@ -230,13 +235,19 @@ def verify_payment():
     payment_id = data.get("razorpay_payment_id")
     signature  = data.get("razorpay_signature")
 
-    secret = current_app.config["RAZORPAY_KEY_SECRET"].encode()
-    message = f"{order_id}|{payment_id}".encode()
-    computed = hmac.new(secret, message, hashlib.sha256).hexdigest()
-
+    key_secret = current_app.config.get("RAZORPAY_KEY_SECRET")
+    
     payment = Payment.query.filter_by(razorpay_order_id=order_id).first()
     if not payment:
         return error("Payment record not found")
+
+    if not key_secret or key_secret == "YOUR_RAZORPAY_KEY_SECRET":
+        # Mock verification success
+        computed = signature
+    else:
+        secret = key_secret.encode()
+        message = f"{order_id}|{payment_id}".encode()
+        computed = hmac.new(secret, message, hashlib.sha256).hexdigest()
 
     if computed == signature:
         payment.razorpay_payment_id = payment_id
