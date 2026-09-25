@@ -40,6 +40,18 @@ function initMap() {
   // Expose globally for nearby.js
   window.userMap = userMap;
 
+  // Set a demo fallback location immediately so requests never block on missing location
+  if (!userLat || !userLng) {
+    userLat = 28.6139;
+    userLng = 77.2090;
+    window.userLat = userLat;
+    window.userLng = userLng;
+    const addrEl = document.getElementById('req-address');
+    if (addrEl && !addrEl.value) addrEl.value = 'New Delhi, India (Demo Location)';
+    const ls = document.getElementById('location-status');
+    if (ls) ls.textContent = '📍 New Delhi, India (Demo)';
+  }
+
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(pos => {
       userLat = pos.coords.latitude;
@@ -73,13 +85,23 @@ function initMap() {
       }
       loadNearbyMechanics();
     }, () => {
+      // Geolocation denied — use demo fallback location (already set above)
       const ms = document.getElementById('map-status');
-      if (ms) ms.textContent = '⚠️ Location access denied — showing default map';
-      // Still load nearby for default center
+      if (ms) ms.textContent = '📍 Using demo location: New Delhi, India';
+      userMap.setView([userLat, userLng], 13);
+      L.marker([userLat, userLng], { icon: makeIcon('#4A90D9', '📍', 38) })
+        .addTo(userMap)
+        .bindPopup('<b style="font-size:.88rem;color:#1E3A5F">📍 Demo Location</b>')
+        .openPopup();
       if (typeof NearbyPlaces !== 'undefined') {
-        NearbyPlaces.loadAll(12.9716, 77.5946);
+        NearbyPlaces.loadAll(userLat, userLng);
       }
-    });
+      loadNearbyMechanics();
+    }, { timeout: 6000 });
+  } else {
+    // No geolocation API — use fallback
+    userMap.setView([userLat, userLng], 13);
+    loadNearbyMechanics();
   }
 }
 

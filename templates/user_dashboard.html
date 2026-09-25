@@ -410,7 +410,9 @@
   const PENDING_SERVICE = "{{ request.args.get('service', '') }}";
   let selectedService = null;
   let currentRequestId = null;
-  let userLat = null, userLng = null;
+  // Pre-set demo location so requests never block on missing GPS
+  let userLat = 28.6139, userLng = 77.2090;
+  window.userLat = userLat; window.userLng = userLng;
   let reviewRequestId = null;
   let selectedRating = 0;
 </script>
